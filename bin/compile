@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# bin/compile <build-dir> <cache-dir> <env-dir>
+
+set -e
+set -o pipefail
+shopt -s dotglob
+
+if [ -n "$BUILDPACK_DEBUG" ]; then
+  set -x
+fi
+
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+
+basedir="$( cd -P "$( dirname "$0" )" && pwd )"
+# shellcheck source=bin/common.sh
+source "${basedir}/common.sh"
+
+KEYCLOAK_PATH="$BUILD_DIR/keycloak"
+TOOLS_PATH="$BUILD_DIR/tools"
+TMP_PATH="$BUILD_DIR/tmp"
+mkdir -p "${CACHE_DIR}/dist" "${TMP_PATH}"
+
+STACK="${STACK:-scalingo-18}"
+
+echo "-----> Install JRE"
+install_jre
+
+echo "-----> Install keycloak"
+
+if [[ -f "$ENV_DIR/KEYCLOAK_VERSION" ]]; then
+  KEYCLOAK_VERSION=$(cat "$ENV_DIR/KEYCLOAK_VERSION")
+else
+  KEYCLOAK_VERSION="11.0.0"
+fi
+
+echo "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
+
+echo "-----> Fetch keycloak tools"
+fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
+
+echo "-----> Fetch keycloak dist"
+fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
+mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
+
+echo "-----> Configure postgresql module"
+if [[ -f "$ENV_DIR/JDBC_POSTGRES_VERSION" ]]; then
+  JDBC_POSTGRES_VERSION=$(cat "$ENV_DIR/JDBC_POSTGRES_VERSION")
+else
+  JDBC_POSTGRES_VERSION="42.2.5"
+fi
+echo "Using JDBC postgresql version: ${JDBC_POSTGRES_VERSION}" | indent
+configure_postgres_module "${JDBC_POSTGRES_VERSION}" "${KEYCLOAK_PATH}" "${TOOLS_PATH}" | indent
+
+echo "-----> Configure keycloak"
+configure_keycloak "${KEYCLOAK_PATH}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
+
+rm -rf "${KEYCLOAK_PATH}/standalone/tmp/auth"
+rm -rf "${KEYCLOAK_PATH}/domain/tmp/auth"
+
+echo "-----> Make run"
+cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
+awk -v tools_path="${TOOLS_PATH}" -v run_path="${TMP_PATH}/run" '{gsub("/opt/jboss/tools", tools_path); print > run_path}' "${TMP_PATH}/run"
+awk -v keycloak_path="${KEYCLOAK_PATH}" -v run_path="${TMP_PATH}/run" '{gsub("/opt/jboss/keycloak", keycloak_path); print > run_path}' "${TMP_PATH}/run"
+mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
+chmod +x "${BUILD_DIR}/bin/run"
+
+#echo "-----> Cleaning up tmp files"
+#rm -rf "${TMP_PATH}"
+
+echo "-----> Keycloak done"

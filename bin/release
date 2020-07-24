@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+cat << EOF
+---
+addons:
+ - scalingo-postgresql
+config_vars:
+  PATH: /app/bin:/keycloak/bin:/usr/local/bin:/usr/bin:/bin
+default_process_types:
+  web: bin/run
+EOF
