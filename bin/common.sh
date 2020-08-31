@@ -107,7 +107,7 @@ function install_jre() {
    mkdir -p "${BUILD_DIR}/.profile.d"
   fi
   touch "${BUILD_DIR}/.profile.d/java.sh"
-  echo "export PATH=$PATH:$BUILD_DIR/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
+  echo "export PATH=$PATH:/app/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
   info "$(java -version)"
   finished
 }
@@ -181,12 +181,22 @@ function configure_postgres_module() {
 function configure_keycloak() {
   local keycloak_path="$1"
   local tools_path="$2"
-  find "${tools_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
-  find "${keycloak_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
   find "${tools_path}" -type f -name '*.sh' -exec chmod +x {} \;
   find "${keycloak_path}" -type f -name '*.sh' -exec chmod +x {} \;
+  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
+  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
+  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
+  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
   rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
   rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
+  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
+  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
+  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
+  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
 }

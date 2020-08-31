@@ -40,8 +40,8 @@ And test in it:
 
 ```shell
 bash buildpack/bin/detect
-bash buildpack/bin/compile /app '' ''
-bash buildpack/bin/release /app
+bash buildpack/bin/compile /build '' ''
+bash buildpack/bin/release
 ```
 
 Run Keycloak server:

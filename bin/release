@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# usage: bin/release <build-dir>
-
-set -eo pipefail
-
-BUILD_DIR=${1:-}
 
 cat << EOF
 ---
 addons:
  - scalingo-postgresql
 config_vars:
-  PATH: "${BUILD_DIR}/bin:${BUILD_DIR}/keycloak/bin:${BUILD_DIR}/java/bin:/usr/local/bin:/usr/bin:/bin"
+  PATH: "/app/bin:/app/keycloak/bin:/app/java/bin:/usr/local/bin:/usr/bin:/bin"
 default_process_types:
   web: bin/run -b 0.0.0.0
 EOF
