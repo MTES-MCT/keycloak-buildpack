@@ -183,6 +183,8 @@ function configure_keycloak() {
   local tools_path="$2"
   find "${tools_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
   find "${keycloak_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${tools_path}" -type f -name '*.sh' -exec chmod +x {} \;
+  find "${keycloak_path}" -type f -name '*.sh' -exec chmod +x {} \;
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
   rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
