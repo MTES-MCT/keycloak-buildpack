@@ -1,72 +1,86 @@
-#!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir> <env-dir>
+#!/bin/bash
+# usage: bin/compile <build-dir> <cache-dir> <env-dir>
 
-set -e
-set -o pipefail
-shopt -s dotglob
+set -eo pipefail
+
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
+buildpack="$(cd -P "$(dirname "$0")" && pwd)"
+
+source "${buildpack}/common.sh"
 
 if [ -n "$BUILDPACK_DEBUG" ]; then
   set -x
 fi
 
-BUILD_DIR=${1:-}
-CACHE_DIR=${2:-}
-ENV_DIR=${3:-}
-
-basedir="$( cd -P "$( dirname "$0" )" && pwd )"
-# shellcheck source=bin/common.sh
-source "${basedir}/common.sh"
-
-KEYCLOAK_PATH="$BUILD_DIR/keycloak"
-TOOLS_PATH="$BUILD_DIR/tools"
+mkdir -p "/opt/jboss"
+KEYCLOAK_PATH="/opt/jboss/keycloak"
+TOOLS_PATH="/opt/jboss/tools"
 TMP_PATH="$BUILD_DIR/tmp"
-mkdir -p "${CACHE_DIR}/dist" "${TMP_PATH}"
+mkdir -p "${BUILD_DIR}/bin" "${CACHE_DIR}/dist" "${TMP_PATH}"
+export PATH="$BUILD_DIR/bin:$PATH"
 
 STACK="${STACK:-scalingo-18}"
 
-echo "-----> Install JRE"
 install_jre
 
-echo "-----> Install keycloak"
+start "Install Keycloak"
 
 if [[ -f "$ENV_DIR/KEYCLOAK_VERSION" ]]; then
   KEYCLOAK_VERSION=$(cat "$ENV_DIR/KEYCLOAK_VERSION")
 else
-  KEYCLOAK_VERSION="11.0.0"
+  KEYCLOAK_VERSION="11.0.1"
 fi
 
-echo "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
+info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
 
-echo "-----> Fetch keycloak tools"
+start "Fetch keycloak tools"
 fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
+finished
 
-echo "-----> Fetch keycloak dist"
-fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
-mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
-
-echo "-----> Configure postgresql module"
-if [[ -f "$ENV_DIR/JDBC_POSTGRES_VERSION" ]]; then
-  JDBC_POSTGRES_VERSION=$(cat "$ENV_DIR/JDBC_POSTGRES_VERSION")
+start "Fetch keycloak dist"
+if [ ! -d "${KEYCLOAK_PATH}" ]; then
+  fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
+  mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
 else
-  JDBC_POSTGRES_VERSION="42.2.5"
+  warn "Keycloak already fetched"
 fi
-echo "Using JDBC postgresql version: ${JDBC_POSTGRES_VERSION}" | indent
+finished
+
+if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
+  FRANCE_CONNECT_VERSION=$(cat "${ENV_DIR}/FRANCE_CONNECT_VERSION")
+else
+  FRANCE_CONNECT_VERSION="2.1"
+fi
+start "Add plugin france connect ${FRANCE_CONNECT_VERSION}"
+fetch_france_connect_dist "${FRANCE_CONNECT_VERSION}" "${TMP_PATH}" | indent
+mv "${TMP_PATH}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
+finished
+
+start "Configure postgresql module"
+if [[ -f "${ENV_DIR}/JDBC_POSTGRES_VERSION" ]]; then
+  JDBC_POSTGRES_VERSION=$(cat "${ENV_DIR}/JDBC_POSTGRES_VERSION")
+else
+  JDBC_POSTGRES_VERSION="42.2.16"
+fi
+info "Using JDBC postgresql version: ${JDBC_POSTGRES_VERSION}" | indent
 configure_postgres_module "${JDBC_POSTGRES_VERSION}" "${KEYCLOAK_PATH}" "${TOOLS_PATH}" | indent
+finished
 
-echo "-----> Configure keycloak"
+start "Configure keycloak"
 configure_keycloak "${KEYCLOAK_PATH}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
-
 rm -rf "${KEYCLOAK_PATH}/standalone/tmp/auth"
 rm -rf "${KEYCLOAK_PATH}/domain/tmp/auth"
+finished
 
-echo "-----> Make run"
+start "Building run"
 cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
-awk -v tools_path="${TOOLS_PATH}" -v run_path="${TMP_PATH}/run" '{gsub("/opt/jboss/tools", tools_path); print > run_path}' "${TMP_PATH}/run"
-awk -v keycloak_path="${KEYCLOAK_PATH}" -v run_path="${TMP_PATH}/run" '{gsub("/opt/jboss/keycloak", keycloak_path); print > run_path}' "${TMP_PATH}/run"
 mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
 chmod +x "${BUILD_DIR}/bin/run"
+finished
 
-#echo "-----> Cleaning up tmp files"
-#rm -rf "${TMP_PATH}"
+step "Cleaning up tmp files"
+rm -rf "${TMP_PATH}"
 
-echo "-----> Keycloak done"
+finished

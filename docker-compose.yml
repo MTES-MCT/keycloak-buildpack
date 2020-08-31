@@ -1,18 +1,27 @@
 version: '3.8'
 
 services: 
-    db: 
+    postgres: 
         image: postgres
+        networks: 
+            - keycloak_network
         env_file: .env
         restart: 'always'
         volumes:
             - db_volume:/var/lib/postgresql/data
     keycloak:
-        image: scalingo/scalingo-18
+        build: .
+        networks: 
+            - keycloak_network
         volumes: 
             - .:/buildpack
         env_file: .env
+        ports: 
+            - 8080:8080
+            - 8443:8443
         depends_on:
-            - db
+            - postgres
 volumes: 
     db_volume:
+networks: 
+    keycloak_network:

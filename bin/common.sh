@@ -1,21 +1,97 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+steptxt="----->"
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+NC='\033[0m'                                                # No Color
+CURL="curl -L --retry 15 --retry-delay 2" # retry for up to 30 seconds
+
+info() {
+  echo -e "${GREEN}       $*${NC}"
+}
+
+warn() {
+  echo -e "${YELLOW} !!    $*${NC}"
+}
+
+err() {
+  echo -e "${RED} !!    $*${NC}" >&2
+}
+
+step() {
+  echo "$steptxt $*"
+}
+
+start() {
+  echo -n "$steptxt $*... "
+}
+
+finished() {
+  echo "done"
+}
 
 function indent() {
   c='s/^/       /'
   case $(uname) in
-    Darwin) sed -l "$c";; # mac/bsd sed: -l buffers on line boundaries
-    *)      sed -u "$c";; # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
+  Darwin) sed -l "$c" ;; # mac/bsd sed: -l buffers on line boundaries
+  *) sed -u "$c" ;;      # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
   esac
 }
 
-function install_jre(){
-  if [ -d /usr/share/man/man1 ]; then
-    echo "Java is already installed"
-    java -version
+function install_jre() {
+  apt-get install -y jq
+  if [[ -f "${ENV_DIR}/JRE_MAJOR_VERSION" ]]; then
+    JRE_MAJOR_VERSION=$(cat "${ENV_DIR}/JRE_MAJOR_VERSION")
   else
-    mkdir -p /usr/share/man/man1
-    apt-get -qq update && apt-get -qq -y install default-jre
+    JRE_MAJOR_VERSION=11
   fi
+  start "Install AdoptOpenJDK $JRE_MAJOR_VERSION JRE"
+  local jre_query_url="https://api.adoptopenjdk.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga\?architecture\=x64\&heap_size\=normal\&image_type\=jre\&jvm_impl\=hotspot\&os\=linux\&page\=0\&page_size\=1\&project\=jdk\&sort_order\=DESC\&vendor\=adoptopenjdk"
+  local http_code=$(curl -s -o "$TMP_PATH/jre.json" -w '%{http_code}' "${jre_query_url}")
+  if [[ $http_code == 200 ]]; then
+    local jre_dist=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.name')
+    local checksum="$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.checksum') $jre_dist"
+    local jre_release_name=$(cat "$TMP_PATH/jre.json" | jq '.[] | .release_name')
+    local jre_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.link')
+  else
+    warn "AdoptOpenJDK API v3 unavailable. HTTP STATUS CODE: $http_code"
+    local jre_release_name="jdk-11.0.8+10"
+    info "Choosing by default $jre_release_name"
+    local jre_dist="OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
+    local jre_url="https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.8%2B10/${jre_dist}"
+    local checksum="98615b1b369509965a612232622d39b5cefe117d6189179cbad4dcef2ee2f4e1 OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
+  fi
+  info "Fetching $jre_dist"
+  local dist_filename="${CACHE_DIR}/dist/$jre_dist"
+  if [ -f "${dist_filename}" ]; then
+    info "File already downloaded"
+  else
+    ${CURL} -o "${dist_filename}" "${jre_url}"
+  fi
+  if [ -f "${dist_filename}.sha256" ]; then
+    info "JRE sha256 sum already checked"
+  else
+    echo "${checksum}" > "${dist_filename}.sha256"
+    cd "${CACHE_DIR}/dist" || return
+    sha256sum -c --strict --status "${dist_filename}.sha256"
+    info "JRE sha256 checsum valid"
+  fi
+  if [ -d "/opt/java" ]; then
+    warn "JRE already installed"
+  else
+    tar xzf "${jre_dist}" -C "${CACHE_DIR}/dist"
+    mv "${CACHE_DIR}/dist/$jre_release_name-jre" "/opt/java"
+    info "JRE archive unzipped to /opt/java"
+  fi
+  export PATH=$PATH:"/opt/java/bin"
+  if [ ! -d "${BUILD_DIR}/.profile.d" ]; then
+   mkdir -p "${BUILD_DIR}/.profile.d"
+  fi
+  touch "${BUILD_DIR}/.profile.d/java.sh"
+  echo "export PATH=$PATH:/opt/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
+  info "$(java -version)"
+  finished
 }
 
 function fetch_keycloak_dist() {
@@ -25,29 +101,35 @@ function fetch_keycloak_dist() {
   local dist="keycloak-${version}.tar.gz"
   local dist_url="https://downloads.jboss.org/keycloak/${version}/${dist}"
   local sha1_url="${dist_url}.sha1"
-  local checksum=""
-  checksum=$(curl --fail --retry 3 --retry-delay 2 --connect-timeout 3 --max-time 30 "${sha1_url}" 2> /dev/null)
-  echo "checksum downloaded: $checksum"
-  local cache_checksum=""
-
-  if [ -f "$CACHE_DIR/dist/${dist}.sha1" ]; then
-    cache_checksum=$(cat "$CACHE_DIR/dist/${dist}.sha1")
-  fi
-
-  if [ "$cache_checksum" != "$checksum" ]; then
-    curl --fail --retry 3 --retry-delay 2 --connect-timeout 3 --max-time 30 "${dist_url}" -L -s > "$CACHE_DIR/dist/${dist}"
-    echo "Keycloak dist downloaded"
-    # echo -n " ${dist}.sha1" >> "${dist}.sha1"
-    # echo "cat sha1: $(cat "${dist}.sha1")"
-    # sha1sum -c "${dist}.sha1"
-    echo "$checksum" > "$CACHE_DIR/dist/${dist}.sha1"
+  if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
+    info "File is already downloaded"
   else
-    echo "Checksums match. Fetching from cache."
+    ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
   fi
-
-  echo "Keycloak dist to be unzipped" 
+  ${CURL} -o "${CACHE_DIR}/dist/${dist}.sha1" "${sha1_url}"
+  local file_checksum="$(shasum "${CACHE_DIR}/dist/${dist}" | cut -d \  -f 1)"
+  local checksum=$(cat "${CACHE_DIR}/dist/${dist}.sha1")
+  if [ "$checksum" != "$file_checksum" ]; then
+    err "Checksum file downloaded not valid"
+    exit 1
+  else
+    info "Checksum valid"
+  fi
   tar xzf "$CACHE_DIR/dist/${dist}" -C "$location"
-  echo "Keycloak dist is unzipped"    
+}
+
+function fetch_france_connect_dist() {
+  local version="$1"
+  local location="$2"
+
+  local dist="keycloak-franceconnect-${version}.jar"
+  local dist_url="https://github.com/InseeFr/Keycloak-FranceConnect/releases/download/${version}/${dist}"
+  if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
+    info "File is already downloaded"
+  else
+    ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
+    cp "${CACHE_DIR}/dist/${dist}" "${location}"
+  fi
 }
 
 function fetch_keycloak_tools() {
@@ -58,39 +140,30 @@ function fetch_keycloak_tools() {
   local tools_repo_url="https://github.com/keycloak/keycloak-containers"
   git clone --depth 1 --branch "${version}" "${tools_repo_url}" "${tmp}/keycloak-containers" >/dev/null 2>&1
   if [ -d "${location}" ]; then
-    echo "${location} not empty"
+    warn "${location} not empty"
   else
-    echo "copy tools to ${location}"
     mv "${tmp}/keycloak-containers/server/tools" "${location}"
   fi
   rm -rf "${tmp}/keycloak-containers"
 }
 
-function configure_postgres_module(){
-    local version="$1"
-    local keycloak_path="$2"
-    local tools_path="$3"
+function configure_postgres_module() {
+  local version="$1"
+  local keycloak_path="$2"
+  local tools_path="$3"
 
-    mkdir -p "${keycloak_path}/modules/system/layers/base/org/postgres/jdbc/main"
-    cd "${keycloak_path}/modules/system/layers/base/org/postgres/jdbc/main" || return
-    local jdbc_postgresql_url="https://repo1.maven.org/maven2/org/postgres/postgres/${version}/postgresql-${version}.jar"
-    curl -L -s "${jdbc_postgresql_url}" > postgres-jdbc.jar
-    cp "${tools_path}/databases/postgres/module.xml" .
+  mkdir -p "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main"
+  cd "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main" || return
+  local jdbc_postgresql_url="https://jdbc.postgresql.org/download/postgresql-${version}.jar"
+  curl -L -s "${jdbc_postgresql_url}" > postgres-jdbc.jar
+  cp "${tools_path}/databases/postgres/module.xml" .
 }
 
-function configure_keycloak(){
-    local keycloak_path="$1"
-    local tools_path="$2"
-    local std_cfg_cli_path="${tools_path}/cli/standalone-configuration.cli"
-    local std_cfg_ha_cli_path="${tools_path}/cli/standalone-ha-configuration.cli"
-    
-    awk -v tools_path="$tools_path" -v std_cfg_cli_path="$std_cfg_cli_path" '{gsub("/opt/jboss/tools", tools_path); print > std_cfg_cli_path}' "${std_cfg_cli_path}"
-
-    "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
-    rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
-    
-    awk -v tools_path="$tools_path" -v std_cfg_ha_cli_path="$std_cfg_ha_cli_path" '{gsub("/opt/jboss/tools", tools_path); print > std_cfg_ha_cli_path}' "${std_cfg_ha_cli_path}"
-
-    "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
-    rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
+function configure_keycloak() {
+  local keycloak_path="$1"
+  local tools_path="$2"
+  "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
+  rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
+  "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
+  rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
 }

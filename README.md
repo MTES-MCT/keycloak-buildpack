@@ -4,21 +4,19 @@
 
 ## Usage
 
-[Add this buildpack][1] to your Scalingo application to install the `Keycloak` server:
+[Add this buildpack environment variable][1] to your Scalingo application to install the `Keycloak` server:
 
 ```shell
-scalingo env-set 'BUILDPACK_URL=https://github.com/Scalingo/multi-buildpack
-echo 'https://github.com/Scalingo/java-buildpack' >> .buildpacks
-echo 'https://github.com/tristanrobert/keycloak-buildpack' >> .buildpacks
-git add .buildpacks
-git commit -m 'Add multi-buildpack java and keycloak'
+BUILDPACK_URL=https://github.com/tristanrobert/keycloak-buildpack
 ```
 
-Default version is `11.0.0`, but you can choose another one:
+Default version is `11.0.1`, but you can choose another one:
 
 ```shell
 scalingo env-set KEYCLOAK_VERSION=10.0.2
 ```
+
+See [Keycloak docs](https://github.com/keycloak/keycloak-containers/tree/master/server) to use keycloak image server.
 
 ## Configuration
 
@@ -35,7 +33,7 @@ cp .env.sample .env
 Run an interactive docker scalingo stack:
 
 ```shell
- docker run --interactive --tty -e STACK=scalingo-18 --env-file  ~/Repositories/github.com/tristanrobert/keycloak-buildpack/.env -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
+ docker run --name keycloak --interactive --tty -p 8080:8080 --env-file  ~/Repositories/github.com/tristanrobert/keycloak-buildpack/.env -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
 ```
 
 And test in it:
@@ -46,4 +44,17 @@ bash buildpack/bin/compile
 bash buildpack/bin/release
 ```
 
-[1]: https://doc.scalingo.com/platform/deployment/buildpacks/multi
+Run Keycloak server:
+
+```shell
+export PATH=$PATH:/opt/java/bin
+./bin/run -b 0.0.0.0
+```
+
+You can also use docker-compose stack:
+
+```shell
+docker-compose up --build -d
+```
+
+[1]: https://doc.scalingo.com/platform/deployment/buildpacks/custom
