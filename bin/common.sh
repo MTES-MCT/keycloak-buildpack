@@ -98,7 +98,7 @@ function install_jre() {
   if [ -d "${BUILD_DIR}/java" ]; then
     warn "JRE already installed"
   else
-    tar xzf "${jre_dist}" -C "${CACHE_DIR}/dist"
+    tar xzf "${dist_filename}" -C "${CACHE_DIR}/dist"
     mv "${CACHE_DIR}/dist/$jre_release_name-jre" "$BUILD_DIR/java"
     info "JRE archive unzipped to $BUILD_DIR/java"
   fi
