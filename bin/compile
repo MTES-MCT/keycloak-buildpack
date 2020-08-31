@@ -14,9 +14,8 @@ if [ -n "$BUILDPACK_DEBUG" ]; then
   set -x
 fi
 
-mkdir -p "/opt/jboss"
-KEYCLOAK_PATH="/opt/jboss/keycloak"
-TOOLS_PATH="/opt/jboss/tools"
+KEYCLOAK_PATH="$BUILD_DIR/keycloak"
+TOOLS_PATH="$BUILD_DIR/tools"
 TMP_PATH="$BUILD_DIR/tmp"
 mkdir -p "${BUILD_DIR}/bin" "${CACHE_DIR}/dist" "${TMP_PATH}"
 export PATH="$BUILD_DIR/bin:$PATH"
@@ -39,7 +38,7 @@ start "Fetch keycloak tools"
 fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
 finished
 
-start "Fetch keycloak dist"
+start "Fetch keycloak ${KEYCLOAK_VERSION} dist"
 if [ ! -d "${KEYCLOAK_PATH}" ]; then
   fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
   mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
@@ -55,7 +54,6 @@ else
 fi
 start "Add plugin france connect ${FRANCE_CONNECT_VERSION}"
 fetch_france_connect_dist "${FRANCE_CONNECT_VERSION}" "${TMP_PATH}" | indent
-mv "${TMP_PATH}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
 finished
 
 start "Configure postgresql module"

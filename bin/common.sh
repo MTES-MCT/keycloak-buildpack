@@ -55,9 +55,10 @@ function install_jre() {
     local jre_release_name=$(cat "$TMP_PATH/jre.json" | jq '.[] | .release_name')
     local jre_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.link')
   else
-    warn "AdoptOpenJDK API v3 unavailable. HTTP STATUS CODE: $http_code"
+    warn "AdoptOpenJDK API v3 unavailable"
+    warn "HTTP STATUS CODE: $http_code"
     local jre_release_name="jdk-11.0.8+10"
-    info "Choosing by default $jre_release_name"
+    info "Using by default $jre_release_name"
     local jre_dist="OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
     local jre_url="https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.8%2B10/${jre_dist}"
     local checksum="98615b1b369509965a612232622d39b5cefe117d6189179cbad4dcef2ee2f4e1 OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
@@ -75,21 +76,21 @@ function install_jre() {
     echo "${checksum}" > "${dist_filename}.sha256"
     cd "${CACHE_DIR}/dist" || return
     sha256sum -c --strict --status "${dist_filename}.sha256"
-    info "JRE sha256 checsum valid"
+    info "JRE sha256 checksum valid"
   fi
-  if [ -d "/opt/java" ]; then
+  if [ -d "${BUILD_DIR}/java" ]; then
     warn "JRE already installed"
   else
     tar xzf "${jre_dist}" -C "${CACHE_DIR}/dist"
-    mv "${CACHE_DIR}/dist/$jre_release_name-jre" "/opt/java"
-    info "JRE archive unzipped to /opt/java"
+    mv "${CACHE_DIR}/dist/$jre_release_name-jre" "$BUILD_DIR/java"
+    info "JRE archive unzipped to $BUILD_DIR/java"
   fi
-  export PATH=$PATH:"/opt/java/bin"
+  export PATH=$PATH:"${BUILD_DIR}/java/bin"
   if [ ! -d "${BUILD_DIR}/.profile.d" ]; then
    mkdir -p "${BUILD_DIR}/.profile.d"
   fi
   touch "${BUILD_DIR}/.profile.d/java.sh"
-  echo "export PATH=$PATH:/opt/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
+  echo "export PATH=$PATH:$BUILD_DIR/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
   info "$(java -version)"
   finished
 }
@@ -110,10 +111,10 @@ function fetch_keycloak_dist() {
   local file_checksum="$(shasum "${CACHE_DIR}/dist/${dist}" | cut -d \  -f 1)"
   local checksum=$(cat "${CACHE_DIR}/dist/${dist}.sha1")
   if [ "$checksum" != "$file_checksum" ]; then
-    err "Checksum file downloaded not valid"
+    err "Keycloak checksum file downloaded not valid"
     exit 1
   else
-    info "Checksum valid"
+    info "Keycloak checksum valid"
   fi
   tar xzf "$CACHE_DIR/dist/${dist}" -C "$location"
 }
@@ -129,6 +130,7 @@ function fetch_france_connect_dist() {
   else
     ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
     cp "${CACHE_DIR}/dist/${dist}" "${location}"
+    mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
   fi
 }
 
@@ -162,6 +164,8 @@ function configure_postgres_module() {
 function configure_keycloak() {
   local keycloak_path="$1"
   local tools_path="$2"
+  find "${tools_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
+  find "${keycloak_path}" -type f -name '*' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
   rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
   "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
