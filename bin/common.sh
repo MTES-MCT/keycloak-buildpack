@@ -39,8 +39,25 @@ function indent() {
   esac
 }
 
+function install_jq(){
+  if [[ -f "${ENV_DIR}/JQ_VERSION" ]]; then
+    JQ_VERSION=$(cat "${ENV_DIR}/JQ_VERSION")
+  else
+    JQ_VERSION=1.6
+  fi
+  start "Fetching jq $JQ_VERSION"
+  if [ -f "${CACHE_DIR}/dist/jq-$JQ_VERSION" ]; then
+    info "File already downloaded"
+  else
+    ${CURL} -o "${CACHE_DIR}/dist/jq-$JQ_VERSION" "https://github.com/stedolan/jq/releases/download/jq-$JQ_VERSION/jq-linux64"
+  fi
+  cp "${CACHE_DIR}/dist/jq-$JQ_VERSION" "${BUILD_DIR}/bin/jq"
+  chmod +x "${BUILD_DIR}/bin/jq"
+  finished
+}
+
 function install_jre() {
-  apt-get install -y jq
+  install_jq
   if [[ -f "${ENV_DIR}/JRE_MAJOR_VERSION" ]]; then
     JRE_MAJOR_VERSION=$(cat "${ENV_DIR}/JRE_MAJOR_VERSION")
   else
