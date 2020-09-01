@@ -74,6 +74,7 @@ finished
 
 start "Building run"
 cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
+sed -i "/vault.sh/a SYS_PROPS+=-Djboss.http.port=${JBOSS_HTTP_PORT}" "${TMP_PATH}/run"
 mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
 chmod +x "${BUILD_DIR}/bin/run"
 finished

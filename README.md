@@ -47,7 +47,7 @@ bash buildpack/bin/release
 Run Keycloak server:
 
 ```shell
-export PATH=$PATH:/opt/java/bin
+export PATH=$PATH:/app/java/bin
 ./bin/run -b 0.0.0.0
 ```
 
