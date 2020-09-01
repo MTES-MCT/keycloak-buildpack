@@ -33,14 +33,14 @@ cp .env.sample .env
 Run an interactive docker scalingo stack:
 
 ```shell
- docker run --name keycloak --interactive --tty -p 8080:8080 --env-file  ~/Repositories/github.com/tristanrobert/keycloak-buildpack/.env -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
+ docker run --name keycloak -it -p 8080:8080 -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack/.env:/env/.env -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
 ```
 
 And test in it:
 
 ```shell
 bash buildpack/bin/detect
-bash buildpack/bin/compile /build '' ''
+bash buildpack/bin/compile /build /cache /env
 bash buildpack/bin/release
 ```
 

@@ -15,6 +15,10 @@ services:
             - keycloak_network
         volumes: 
             - .:/buildpack
+            - cache:/cache
+            - build:/build
+            - env:/env
+            - app:/app
         env_file: .env
         ports: 
             - 8080:8080
@@ -23,5 +27,9 @@ services:
             - postgres
 volumes: 
     db_volume:
+    cache:
+    build:
+    env:
+    app:
 networks: 
     keycloak_network:

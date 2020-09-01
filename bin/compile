@@ -29,22 +29,42 @@ start "Install Keycloak"
 if [[ -f "$ENV_DIR/KEYCLOAK_VERSION" ]]; then
   KEYCLOAK_VERSION=$(cat "$ENV_DIR/KEYCLOAK_VERSION")
 else
-  KEYCLOAK_VERSION="11.0.1"
+  KEYCLOAK_VERSION="11.0.2"
 fi
-
-info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
-
-start "Fetch keycloak tools"
-fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
-finished
 
 start "Fetch keycloak ${KEYCLOAK_VERSION} dist"
 if [ ! -d "${KEYCLOAK_PATH}" ]; then
   fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
   mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
 else
-  warn "Keycloak already fetched"
+  warn "Keycloak already installed"
+  if [[ -f "${ENV_DIR}/KEYCLOAK_MIGRATION" ]]; then
+    KEYCLOAK_MIGRATION=$(cat "$ENV_DIR/KEYCLOAK_MIGRATION")
+  else
+    KEYCLOAK_MIGRATION=0
+  fi
+  if [[ -f "${ENV_DIR}/KEYCLOAK_CLUSTER_MODE" ]]; then
+    KEYCLOAK_CLUSTER_MODE=$(cat "$ENV_DIR/KEYCLOAK_CLUSTER_MODE")
+  else
+    KEYCLOAK_CLUSTER_MODE="standalone"
+  fi
+  if [ $KEYCLOAK_MIGRATION == 1 ]; then
+    info "Keycloak migration into ${KEYCLOAK_VERSION}"
+    mv "/app/keycloak" "${TMP_PATH}/keycloak-backup"
+    fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
+    mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
+    cp -r "${TMP_PATH}/keycloak-backup/standalone" "${KEYCLOAK_PATH}/standalone"
+    cp -r "${TMP_PATH}/keycloak-backup/domain" "${KEYCLOAK_PATH}/domain"
+    cp -r "${TMP_PATH}/keycloak-backup/standalone" "${KEYCLOAK_PATH}/standalone"
+    "${KEYCLOAK_PATH}/bin/jboss-cli.sh --file=${KEYCLOAK_PATH}/bin/migrate-$KEYCLOAK_CLUSTER_MODE.cli"
+  fi
 fi
+finished
+
+info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
+
+start "Fetch keycloak tools"
+fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
 finished
 
 if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
@@ -74,7 +94,12 @@ finished
 
 start "Building run"
 cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
-sed -i "/vault.sh/a SYS_PROPS+=-Djboss.http.port=${JBOSS_HTTP_PORT}" "${TMP_PATH}/run"
+  if [[ -f "${ENV_DIR}/JBOSS_HTTP_PORT" ]]; then
+    JBOSS_HTTP_PORT=$(cat "$ENV_DIR/JBOSS_HTTP_PORT")
+  else
+    JBOSS_HTTP_PORT=8080
+  fi
+sed -i "/vault.sh/a SYS_PROPS+=\" -Djboss.http.port=${JBOSS_HTTP_PORT}\"" "${TMP_PATH}/run"
 mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
 chmod +x "${BUILD_DIR}/bin/run"
 finished
