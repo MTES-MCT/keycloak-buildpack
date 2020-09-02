@@ -94,12 +94,14 @@ finished
 
 start "Building run"
 cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
-  if [[ -f "${ENV_DIR}/JBOSS_HTTP_PORT" ]]; then
-    JBOSS_HTTP_PORT=$(cat "$ENV_DIR/JBOSS_HTTP_PORT")
-  else
-    JBOSS_HTTP_PORT=8080
-  fi
-sed -i "/vault.sh/a SYS_PROPS+=\" -Djboss.http.port=${JBOSS_HTTP_PORT}\"" "${TMP_PATH}/run"
+if [[ -f "${ENV_DIR}/JBOSS_HTTP_PORT" ]]; then
+  JBOSS_HTTP_PORT=$(cat "$ENV_DIR/JBOSS_HTTP_PORT")
+  sed -i "/vault.sh/a SYS_PROPS+=\" -Djboss.http.port=${JBOSS_HTTP_PORT}\"" "${TMP_PATH}/run"
+fi
+if [[ -f "${ENV_DIR}/KEYCLOAK_FRONTEND_URL" ]]; then
+  KEYCLOAK_FRONTEND_URL=$(cat "$ENV_DIR/KEYCLOAK_FRONTEND_URL")
+  sed -i "/vault.sh/a SYS_PROPS+=\" -Dkeycloak.frontendUrl=${KEYCLOAK_FRONTEND_URL}\"" "${TMP_PATH}/run"
+fi
 mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
 chmod +x "${BUILD_DIR}/bin/run"
 finished

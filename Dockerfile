@@ -5,10 +5,14 @@ ADD . buildpack
 ADD .env /env/.env
 RUN buildpack/bin/env.sh /env/.env /env
 RUN buildpack/bin/compile /build /cache /env
-RUN cp -r /build/bin /app/bin
-RUN cp -r /build/java /app/java
-RUN cp -r /build/keycloak /app/keycloak
-RUN cp -r /build/tools /app/tools
+RUN rm -rf /app/bin
+RUN cp -rf /build/bin /app/bin
+RUN rm -rf /app/java
+RUN cp -rf /build/java /app/java
+RUN rm -rf /app/keycloak
+RUN cp -rf /build/keycloak /app/keycloak
+RUN rm -rf /app/tools
+RUN cp -rf /build/tools /app/tools
 
 EXPOSE 8080
 EXPOSE 8443
