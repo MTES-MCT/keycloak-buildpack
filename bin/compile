@@ -92,6 +92,15 @@ rm -rf "${KEYCLOAK_PATH}/standalone/tmp/auth"
 rm -rf "${KEYCLOAK_PATH}/domain/tmp/auth"
 finished
 
+start "Add keycloak admin user"
+if [[ -f "${ENV_DIR}/KEYCLOAK_ADMIN_USERNAME" && -f "${ENV_DIR}/KEYCLOAK_ADMIN_PASSWORD" ]]; then
+  KEYCLOAK_ADMIN_USERNAME=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_USERNAME")
+  KEYCLOAK_ADMIN_PASSWORD=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_PASSWORD")
+  
+fi
+"${KEYCLOAK_PATH}"/bin/add-user-keycloak.sh -r master -u "$KEYCLOAK_ADMIN_USERNAME" -p "$KEYCLOAK_ADMIN_PASSWORD"
+finished
+
 start "Building run"
 cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
 if [[ -f "${ENV_DIR}/JBOSS_HTTP_PORT" ]]; then
