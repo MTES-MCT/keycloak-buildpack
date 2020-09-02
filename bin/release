@@ -8,6 +8,6 @@ config_vars:
   PATH: "/app/bin:/app/keycloak/bin:/app/java/bin:/usr/local/bin:/usr/bin:/bin"
 default_process_types:
   web: bin/run -b 0.0.0.0
-  add-user: ./add-user-keycloak.sh
-  standalone: ./standalone.sh
+  add-user: keycloak/bin/add-user-keycloak.sh
+  standalone: keycloak/bin/standalone.sh
 EOF
