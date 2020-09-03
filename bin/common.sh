@@ -158,7 +158,7 @@ function fetch_keycloak_tools() {
 
   local tools_repo_url="https://github.com/keycloak/keycloak-containers"
   git clone --depth 1 --branch "${version}" "${tools_repo_url}" "${tmp}/keycloak-containers" >/dev/null 2>&1
-  mv -rf "${tmp}/keycloak-containers/server/tools" "${location}"
+  mv "${tmp}/keycloak-containers/server/tools" "${location}"
   rm -rf "${tmp}/keycloak-containers"
 }
 
