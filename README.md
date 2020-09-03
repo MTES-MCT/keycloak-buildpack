@@ -10,7 +10,7 @@
 BUILDPACK_URL=https://github.com/tristanrobert/keycloak-buildpack
 ```
 
-Default version is `11.0.1`, but you can choose another one:
+Default version is `11.0.2`, but you can choose another one:
 
 ```shell
 scalingo env-set KEYCLOAK_VERSION=10.0.2
@@ -27,6 +27,34 @@ Environment variables are set in a `.env` file. You copy the sample one:
 ```shell
 cp .env.sample .env
 ```
+
+### Add a user admin
+
+In .env set these vars:
+
+```shell
+KEYCLOAK_ADMIN_USERNAME=your-admin-name
+KEYCLOAK_ADMIN_PASSWORD=your-admin-password
+```
+
+then build again.
+
+### Export or import data
+
+```shell
+/app/keycloak/bin/standalone.sh \
+-Djboss.socket.binding.port-offset=100 -Dkeycloak.migration.action=export \
+-Dkeycloak.migration.provider=singleFile \
+-Dkeycloak.migration.realmName=my_realm \
+-Dkeycloak.migration.usersExportStrategy=REALM_FILE \
+-Dkeycloak.migration.file=/tmp/my_realm.json
+```
+
+Don't forget the `-Djboss.socket.binding.port-offset=100` change ports to not stop server running.
+
+You can do the same with import. See [Export/import docs](https://www.keycloak.org/docs/latest/server_admin/index.html#_export_import)
+
+With [scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archive-and-extract-it-on-the-server) you can download or upload these files.
 
 ## Hacking
 
