@@ -4,7 +4,7 @@ steptxt="----->"
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 RED='\033[1;31m'
-NC='\033[0m'                                                # No Color
+NC='\033[0m'                              # No Color
 CURL="curl -L --retry 15 --retry-delay 2" # retry for up to 30 seconds
 
 info() {
@@ -39,7 +39,7 @@ function indent() {
   esac
 }
 
-function install_jq(){
+function install_jq() {
   if [[ -f "${ENV_DIR}/JQ_VERSION" ]]; then
     JQ_VERSION=$(cat "${ENV_DIR}/JQ_VERSION")
   else
@@ -90,7 +90,7 @@ function install_jre() {
   if [ -f "${dist_filename}.sha256" ]; then
     info "JRE sha256 sum already checked"
   else
-    echo "${checksum}" > "${dist_filename}.sha256"
+    echo "${checksum}" >"${dist_filename}.sha256"
     cd "${CACHE_DIR}/dist" || return
     sha256sum -c --strict --status "${dist_filename}.sha256"
     info "JRE sha256 checksum valid"
@@ -104,10 +104,10 @@ function install_jre() {
   fi
   export PATH=$PATH:"${BUILD_DIR}/java/bin"
   if [ ! -d "${BUILD_DIR}/.profile.d" ]; then
-   mkdir -p "${BUILD_DIR}/.profile.d"
+    mkdir -p "${BUILD_DIR}/.profile.d"
   fi
   touch "${BUILD_DIR}/.profile.d/java.sh"
-  echo "export PATH=$PATH:/app/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
+  echo "export PATH=$PATH:/app/java/bin" >"${BUILD_DIR}/.profile.d/java.sh"
   info "$(java -version)"
   finished
 }
@@ -146,9 +146,9 @@ function fetch_france_connect_dist() {
     info "File is already downloaded"
   else
     ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
-    cp "${CACHE_DIR}/dist/${dist}" "${location}"
-    mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
   fi
+  cp "${CACHE_DIR}/dist/${dist}" "${location}"
+  mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
 }
 
 function fetch_keycloak_tools() {
@@ -173,7 +173,7 @@ function configure_postgres_module() {
   mkdir -p "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main"
   cd "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main" || return
   local jdbc_postgresql_url="https://jdbc.postgresql.org/download/postgresql-${version}.jar"
-  curl -L -s "${jdbc_postgresql_url}" > postgres-jdbc.jar
+  curl -L -s "${jdbc_postgresql_url}" >postgres-jdbc.jar
   cp "${tools_path}/databases/postgres/module.xml" .
 }
 
