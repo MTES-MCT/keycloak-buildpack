@@ -64,7 +64,7 @@ finished
 info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
 
 start "Fetch keycloak tools"
-fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" | indent
+fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
 finished
 
 if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
