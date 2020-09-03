@@ -154,16 +154,15 @@ function fetch_france_connect_dist() {
 function fetch_keycloak_tools() {
   local version="$1"
   local location="$2"
-  local tmp="$3"
 
   local tools_repo_url="https://github.com/keycloak/keycloak-containers"
-  git clone --depth 1 --branch "${version}" "${tools_repo_url}" "${tmp}/keycloak-containers" >/dev/null 2>&1
-  if [ -d "${location}" ]; then
-    warn "${location} not empty"
+  if [ -d "${CACHE_DIR}/dist/keycloak-containers" ]; then
+    info "Refresh ${CACHE_DIR}/dist/keycloak-containers"
+    cd "${CACHE_DIR}/dist/keycloak-containers" && git pull origin
   else
-    mv "${tmp}/keycloak-containers/server/tools" "${location}"
+    git clone --depth 1 --branch "${version}" "${tools_repo_url}" "${CACHE_DIR}/dist/keycloak-containers" >/dev/null 2>&1
+    cp -rf "${CACHE_DIR}/dist/keycloak-containers/server/tools" "${location}"
   fi
-  rm -rf "${tmp}/keycloak-containers"
 }
 
 function configure_postgres_module() {

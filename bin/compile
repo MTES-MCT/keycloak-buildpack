@@ -64,7 +64,7 @@ finished
 info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
 
 start "Fetch keycloak tools"
-fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
+fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" | indent
 finished
 
 if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
@@ -96,7 +96,6 @@ start "Add keycloak admin user"
 if [[ -f "${ENV_DIR}/KEYCLOAK_ADMIN_USERNAME" && -f "${ENV_DIR}/KEYCLOAK_ADMIN_PASSWORD" ]]; then
   KEYCLOAK_ADMIN_USERNAME=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_USERNAME")
   KEYCLOAK_ADMIN_PASSWORD=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_PASSWORD")
-  
 fi
 "${KEYCLOAK_PATH}"/bin/add-user-keycloak.sh -r master -u "$KEYCLOAK_ADMIN_USERNAME" -p "$KEYCLOAK_ADMIN_PASSWORD"
 finished
