@@ -2,6 +2,8 @@
 
 > This buildpack aims at installing a [Keycloak](https://keycloak.org) instance and let you configure it at your convenance.
 
+[![Deploy to Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/tristanrobert/keycloak-buildpack)
+
 ## Usage
 
 [Add this buildpack environment variable][1] to your Scalingo application to install the `Keycloak` server:
