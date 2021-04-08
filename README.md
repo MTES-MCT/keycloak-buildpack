@@ -2,14 +2,14 @@
 
 > This buildpack aims at installing a [Keycloak](https://keycloak.org) instance on [Scalingo](https://www.scalingo.com) and let you configure it at your convenance.
 
-[![Deploy to Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/tristanrobert/keycloak-buildpack)
+[![Deploy to Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/MTES-MCT/keycloak-buildpack)
 
 ## Usage
 
 [Add this buildpack environment variable][1] to your Scalingo application to install the `Keycloak` server:
 
 ```shell
-BUILDPACK_URL=https://github.com/tristanrobert/keycloak-buildpack
+BUILDPACK_URL=https://github.com/MTES-MCT/keycloak-buildpack
 ```
 
 Default version is `11.0.2`, but you can choose another one:
@@ -63,7 +63,7 @@ With [scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archiv
 Run an interactive docker scalingo stack:
 
 ```shell
- docker run --name keycloak -it -p 8080:8080 -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack/.env:/env/.env -v ~/Repositories/github.com/tristanrobert/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
+ docker run --name keycloak -it -p 8080:8080 -v ~/Repositories/github.com/MTES-MCT/keycloak-buildpack/.env:/env/.env -v ~/Repositories/github.com/MTES-MCT/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
 ```
 
 And test in it:
