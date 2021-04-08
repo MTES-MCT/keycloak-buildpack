@@ -70,6 +70,7 @@ And test in it:
 
 ```shell
 bash buildpack/bin/detect
+bash buildpack/bin/env.sh /env/.env /env
 bash buildpack/bin/compile /build /cache /env
 bash buildpack/bin/release
 ```
