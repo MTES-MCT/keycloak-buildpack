@@ -63,7 +63,7 @@ With [scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archiv
 Run an interactive docker scalingo stack:
 
 ```shell
- docker run --name keycloak -it -p 8080:8080 -v ~/Repositories/github.com/MTES-MCT/keycloak-buildpack/.env:/env/.env -v ~/Repositories/github.com/MTES-MCT/keycloak-buildpack:/buildpack scalingo/scalingo-18:latest bash
+ docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-18:latest bash
 ```
 
 And test in it:
