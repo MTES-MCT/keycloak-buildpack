@@ -1,0 +1,105 @@
+{
+  "name": "Keycloak",
+  "description": "Keycloak",
+  "logo": "https://www.keycloak.org/resources/images/keycloak_logo_480x108.png",
+  "repository": "https://github.com/MTES-MCT/keycloak-buildpack",
+  "website": "https://keycloak.org",
+  "env": {
+    "BUILDPACK_URL": {
+      "description": "Buildpack used to deploy Keycloak",
+      "value": "https://github.com/MTES-MCT/keycloak-buildpack#main",
+      "required": true
+    },
+    "STACK": {
+      "description": "scalingo stack",
+      "value": "scalingo-18",
+      "required": false
+    },
+    "JQ_VERSION": {
+      "description": "JQ version",
+      "value": "1.6",
+      "required": false
+    },
+    "JRE_MAJOR_VERSION": {
+      "description": "Java version",
+      "value": "11",
+      "required": false
+    },
+    "JBOSS_HTTP_PORT": {
+      "description": "JBOSS HTTP port to listen (same as Scalingo PORT)",
+      "value": "$PORT",
+      "required": true
+    },
+    "KEYCLOAK_VERSION": {
+      "description": "keycloak version",
+      "value": "12.0.4",
+      "required": false
+    },
+    "KEYCLOAK_MIGRATION": {
+      "description": "keycloak upgrade version 1 (yes) or 0 (default false)",
+      "value": "0",
+      "required": false
+    },
+    "KEYCLOAK_FRONTEND_URL": {
+      "description": "site url",
+      "value": "",
+      "required": false
+    },
+    "KEYCLOAK_CLUSTER_MODE": {
+      "description": "cluster mode",
+      "value": "standalone",
+      "required": true
+    },
+    "KEYCLOAK_ADMIN_USERNAME": {
+      "description": "admin username",
+      "value": "",
+      "required": true
+    },
+    "KEYCLOAK_ADMIN_PASSWORD": {
+      "description": "admin password",
+      "value": "",
+      "required": false
+    },
+    "FRANCE_CONNECT_VERSION": {
+      "description": "france connect plugin version",
+      "value": "2.1",
+      "required": false
+    },
+    "DB_VENDOR": {
+      "description": "database vendor (default postgres)",
+      "value": "postgres",
+      "required": false
+    },
+    "DB_USER": {
+      "description": "database username",
+      "value": "",
+      "required": true
+    },
+    "DB_PASSWORD": {
+      "description": "database password",
+      "value": "",
+      "required": true
+    },
+    "DB_DATABASE": {
+      "description": "database name",
+      "value": "",
+      "required": true
+    },
+    "DB_ADDR": {
+      "description": "database host:port",
+      "value": "",
+      "required": true
+    },
+    "MAX_METASPACE_SIZE": {
+      "description": "Control max memory available",
+      "value": "512m"
+    }
+  },
+  "addons": ["postgresql:postgresql-sandbox"],
+  "formation": {
+    "web": {
+      "amount": 1,
+      "size": "S"
+    }
+  }
+}
