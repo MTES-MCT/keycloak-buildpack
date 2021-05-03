@@ -7,7 +7,7 @@
   "env": {
     "BUILDPACK_URL": {
       "description": "Buildpack used to deploy Keycloak",
-      "value": "https://github.com/MTES-MCT/keycloak-buildpack#main",
+      "value": "https://github.com/MTES-MCT/keycloak-buildpack#master",
       "required": true
     },
     "STACK": {
