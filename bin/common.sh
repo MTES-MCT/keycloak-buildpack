@@ -45,7 +45,7 @@ function install_jq() {
   else
     JQ_VERSION=1.6
   fi
-  start "Fetching jq $JQ_VERSION"
+  step "Fetching jq $JQ_VERSION"
   if [ -f "${CACHE_DIR}/dist/jq-$JQ_VERSION" ]; then
     info "File already downloaded"
   else
@@ -63,22 +63,42 @@ function install_jre() {
   else
     JRE_MAJOR_VERSION=11
   fi
-  start "Install AdoptOpenJDK $JRE_MAJOR_VERSION JRE"
-  local jre_query_url="https://api.adoptopenjdk.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga\?architecture\=x64\&heap_size\=normal\&image_type\=jre\&jvm_impl\=hotspot\&os\=linux\&page\=0\&page_size\=1\&project\=jdk\&sort_order\=DESC\&vendor\=adoptopenjdk"
-  local http_code=$(curl -s -o "$TMP_PATH/jre.json" -w '%{http_code}' "${jre_query_url}")
+  step "Install AdoptOpenJDK $JRE_MAJOR_VERSION JRE"
+  local jre_query_url="https://api.adoptopenjdk.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga"
+  local http_code
+  http_code=$($CURL -G -o "$TMP_PATH/jre.json" -w '%{http_code}' -H "accept: application/json" "${jre_query_url}" \
+   --data-urlencode "architecture=x64" \
+   --data-urlencode "heap_size=normal" \
+   --data-urlencode "image_type=jre" \
+   --data-urlencode "jvm_impl=hotspot" \
+   --data-urlencode "os=linux" \
+   --data-urlencode "page=0" \
+   --data-urlencode "page_size=1" \
+   --data-urlencode "project=jdk" \
+   --data-urlencode "sort_method=DEFAULT" \
+   --data-urlencode "sort_order=DESC" \
+   --data-urlencode "vendor=adoptopenjdk")
+  
   if [[ $http_code == 200 ]]; then
-    local jre_dist=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.name')
-    local checksum="$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.checksum') $jre_dist"
-    local jre_release_name=$(cat "$TMP_PATH/jre.json" | jq '.[] | .release_name')
-    local jre_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.link')
+    local jre_dist
+    jre_dist=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.name' )
+    jre_dist="${jre_dist%\"}"
+    jre_dist="${jre_dist#\"}"
+    local checksum_url
+    checksum_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.checksum_link' | xargs)
+    local jre_release_name
+    jre_release_name=$(cat "$TMP_PATH/jre.json" | jq '.[] | .release_name')
+    jre_release_name="${jre_release_name%\"}"
+    jre_release_name="${jre_release_name#\"}"
+    local jre_url
+    jre_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.link' | xargs)
   else
-    warn "AdoptOpenJDK API v3 unavailable"
-    warn "HTTP STATUS CODE: $http_code"
-    local jre_release_name="jdk-11.0.8+10"
+    warn "AdoptOpenJDK API v3 HTTP STATUS CODE: $http_code"
+    local jre_release_name="jdk-11.0.11+9"
     info "Using by default $jre_release_name"
-    local jre_dist="OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
-    local jre_url="https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.8%2B10/${jre_dist}"
-    local checksum="98615b1b369509965a612232622d39b5cefe117d6189179cbad4dcef2ee2f4e1 OpenJDK11U-jre_x64_linux_hotspot_11.0.8_10.tar.gz"
+    local jre_dist="OpenJDK11U-jre_x64_linux_hotspot_11.0.11_9.tar.gz"
+    local jre_url="https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.11%2B9/${jre_dist}"
+    local checksum_url="${jre_url}.sha256.txt"
   fi
   info "Fetching $jre_dist"
   local dist_filename="${CACHE_DIR}/dist/$jre_dist"
@@ -90,7 +110,7 @@ function install_jre() {
   if [ -f "${dist_filename}.sha256" ]; then
     info "JRE sha256 sum already checked"
   else
-    echo "${checksum}" >"${dist_filename}.sha256"
+    ${CURL} -o "${dist_filename}.sha256" "${checksum_url}"
     cd "${CACHE_DIR}/dist" || return
     sha256sum -c --strict --status "${dist_filename}.sha256"
     info "JRE sha256 checksum valid"
@@ -107,9 +127,26 @@ function install_jre() {
     mkdir -p "${BUILD_DIR}/.profile.d"
   fi
   touch "${BUILD_DIR}/.profile.d/java.sh"
-  echo "export PATH=$PATH:/app/java/bin" >"${BUILD_DIR}/.profile.d/java.sh"
+  echo "export PATH=$PATH:/app/java/bin" > "${BUILD_DIR}/.profile.d/java.sh"
   info "$(java -version)"
   finished
+}
+
+function fetch_github_latest_release() {
+  local location="$1"
+  local latest_release_repo="$2"
+  local default_latest_release="$3"
+  local http_code
+  http_code=$($CURL -G -o "$TMP_PATH/latest_release.json" -w '%{http_code}' -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${latest_release_repo}/releases/latest")
+  local latest_release_version
+  if [[ $http_code == 200 ]]; then
+    latest_release_version=$(cat "$TMP_PATH/latest_release.json" | jq '.tag_name' | xargs)
+    latest_release_version="${latest_release_version%\"}"
+    latest_release_version="${latest_release_version#\"}"
+  else
+    latest_release_version="$default_latest_release"
+  fi
+  echo "$latest_release_version"
 }
 
 function fetch_keycloak_dist() {
@@ -117,16 +154,36 @@ function fetch_keycloak_dist() {
   local location="$2"
 
   local dist="keycloak-${version}.tar.gz"
-  local dist_url="https://downloads.jboss.org/keycloak/${version}/${dist}"
-  local sha1_url="${dist_url}.sha1"
+  local dist_url
+  local download_url
+  local RE='[^0-9]*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)'
+  local major_version
+  major_version=$(echo $version | sed -e "s#$RE#\1#")
+  if [[ $major_version -gt 11 ]]; then
+    download_url="https://github.com/keycloak/keycloak/releases/download/${version}"
+  else
+    download_url="https://downloads.jboss.org/keycloak/${version}"
+  fi
+  dist_url=$(echo "${download_url}/${dist}" | xargs)
+  dist_url="${dist_url%\"}"
+  dist_url="${dist_url#\"}"
+  local sha1_dist
+  sha1_dist=$(echo "${dist}.sha1" | xargs)
+  local sha1_url
+  sha1_url=$(echo "${download_url}/${sha1_dist}" | xargs)
+  sha1_url="${sha1_url%\"}"
+  sha1_url="${sha1_url#\"}"
+  step "Fetch keycloak ${version} dist"
   if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
     info "File is already downloaded"
   else
-    ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
+    ${CURL} -g -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
   fi
-  ${CURL} -o "${CACHE_DIR}/dist/${dist}.sha1" "${sha1_url}"
-  local file_checksum="$(shasum "${CACHE_DIR}/dist/${dist}" | cut -d \  -f 1)"
-  local checksum=$(cat "${CACHE_DIR}/dist/${dist}.sha1")
+  ${CURL} -g -o "${CACHE_DIR}/dist/${dist}.sha1" "${sha1_url}"
+  local file_checksum
+  file_checksum="$(shasum "${CACHE_DIR}/dist/${dist}" | cut -d \  -f 1)"
+  local checksum
+  checksum=$(cat "${CACHE_DIR}/dist/${dist}.sha1")
   if [ "$checksum" != "$file_checksum" ]; then
     err "Keycloak checksum file downloaded not valid"
     exit 1
@@ -134,11 +191,13 @@ function fetch_keycloak_dist() {
     info "Keycloak checksum valid"
   fi
   tar xzf "$CACHE_DIR/dist/${dist}" -C "$location"
+  finished
 }
 
 function fetch_france_connect_dist() {
   local version="$1"
   local location="$2"
+  local dest="$3"
 
   local dist="keycloak-franceconnect-${version}.jar"
   local dist_url="https://github.com/InseeFr/Keycloak-FranceConnect/releases/download/${version}/${dist}"
@@ -148,7 +207,7 @@ function fetch_france_connect_dist() {
     ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
   fi
   cp "${CACHE_DIR}/dist/${dist}" "${location}"
-  mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${KEYCLOAK_PATH}/standalone/deployments/keycloak-franceconnect.jar"
+  mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${dest}/standalone/deployments/keycloak-franceconnect.jar"
 }
 
 function fetch_keycloak_tools() {

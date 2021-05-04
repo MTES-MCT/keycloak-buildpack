@@ -22,17 +22,20 @@ export PATH="$BUILD_DIR/bin:$PATH"
 
 STACK="${STACK:-scalingo-18}"
 
-install_jre
-
 start "Install Keycloak"
+
+install_jre
 
 if [[ -f "$ENV_DIR/KEYCLOAK_VERSION" ]]; then
   KEYCLOAK_VERSION=$(cat "$ENV_DIR/KEYCLOAK_VERSION")
 else
-  KEYCLOAK_VERSION="11.0.2"
+  KEYCLOAK_VERSION="latest"
 fi
 
-start "Fetch keycloak ${KEYCLOAK_VERSION} dist"
+if [[ $KEYCLOAK_VERSION == "latest" ]]; then
+  KEYCLOAK_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "keycloak/keycloak" "12.0.4")
+fi
+
 if [ ! -d "${KEYCLOAK_PATH}" ]; then
   fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
   mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
@@ -48,7 +51,7 @@ else
   else
     KEYCLOAK_CLUSTER_MODE="standalone"
   fi
-  if [ $KEYCLOAK_MIGRATION == 1 ]; then
+  if [ $KEYCLOAK_MIGRATION == "1" ]; then
     info "Keycloak migration into ${KEYCLOAK_VERSION}"
     mv "/app/keycloak" "${TMP_PATH}/keycloak-backup"
     fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
@@ -59,9 +62,8 @@ else
     "${KEYCLOAK_PATH}/bin/jboss-cli.sh --file=${KEYCLOAK_PATH}/bin/migrate-$KEYCLOAK_CLUSTER_MODE.cli"
   fi
 fi
-finished
-
 info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
+finished
 
 start "Fetch keycloak tools"
 fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
@@ -70,17 +72,22 @@ finished
 if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
   FRANCE_CONNECT_VERSION=$(cat "${ENV_DIR}/FRANCE_CONNECT_VERSION")
 else
-  FRANCE_CONNECT_VERSION="2.1"
+  FRANCE_CONNECT_VERSION="latest"
 fi
+
+if [[ $FRANCE_CONNECT_VERSION == "latest" ]]; then
+  FRANCE_CONNECT_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "InseeFr/Keycloak-FranceConnect" "2.3")
+fi
+
 start "Add plugin france connect ${FRANCE_CONNECT_VERSION}"
-fetch_france_connect_dist "${FRANCE_CONNECT_VERSION}" "${TMP_PATH}" | indent
+fetch_france_connect_dist "${FRANCE_CONNECT_VERSION}" "${TMP_PATH}" "${KEYCLOAK_PATH}" | indent
 finished
 
 start "Configure postgresql module"
 if [[ -f "${ENV_DIR}/JDBC_POSTGRES_VERSION" ]]; then
   JDBC_POSTGRES_VERSION=$(cat "${ENV_DIR}/JDBC_POSTGRES_VERSION")
 else
-  JDBC_POSTGRES_VERSION="42.2.16"
+  JDBC_POSTGRES_VERSION="42.2.20"
 fi
 info "Using JDBC postgresql version: ${JDBC_POSTGRES_VERSION}" | indent
 configure_postgres_module "${JDBC_POSTGRES_VERSION}" "${KEYCLOAK_PATH}" "${TOOLS_PATH}" | indent
