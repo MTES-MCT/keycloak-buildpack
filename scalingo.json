@@ -70,9 +70,9 @@
       "value": "public",
       "required": false
     },
-    "KC_DB_URL_HOST": {
-      "description": "database host",
-      "value": "localhost",
+    "KC_DB_URL": {
+      "description": "database url: jdbc:postgresql://localhost:5432/keycloak",
+      "value": "jdbc:postgresql://localhost:5432/keycloak",
       "required": true
     },
     "KC_DB_USERNAME": {
