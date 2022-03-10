@@ -71,7 +71,7 @@ if [[ -f "$ENV_DIR/KC_DB" ]]; then
 else
   KC_DB="postgres"
 fi
-step "COnfiguring the ${KC_DB} vendor"
+step "Configuring the ${KC_DB} vendor"
 "${KEYCLOAK_PATH}/bin/kc.sh" build --db ${KC_DB}
 
 step "Cleaning up tmp files"
