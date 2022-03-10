@@ -9,6 +9,7 @@ services:
         restart: 'always'
         volumes:
             - db_volume:/var/lib/postgresql/data
+            - ./postgresql/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh:ro
     keycloak:
         build: .
         networks: 
