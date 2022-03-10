@@ -36,7 +36,7 @@
       "required": true
     },
     "KC_HOSTNAME": {
-      "description": "host:port",
+      "description": "host",
       "value": "",
       "required": false
     },
@@ -47,7 +47,7 @@
     },
     "KC_HTTPS_PORT": {
       "description": "keycloak HTTPS listening port (same as Scalingo HTTPS PORT)",
-      "value": "8443",
+      "value": "443",
       "required": true
     },
     "KEYCLOAK_ADMIN": {
@@ -63,11 +63,6 @@
     "KC_DB": {
       "description": "database vendor (default postgres)",
       "value": "postgres",
-      "required": false
-    },
-    "KC_DB_SCHEMA": {
-      "description": "database schema",
-      "value": "public",
       "required": false
     },
     "KC_DB_URL": {
