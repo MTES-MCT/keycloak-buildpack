@@ -15,12 +15,11 @@ if [ -n "$BUILDPACK_DEBUG" ]; then
 fi
 
 KEYCLOAK_PATH="$BUILD_DIR/keycloak"
-TOOLS_PATH="$BUILD_DIR/tools"
 TMP_PATH="$BUILD_DIR/tmp"
 mkdir -p "${BUILD_DIR}/bin" "${CACHE_DIR}/dist" "${TMP_PATH}"
 export PATH="$BUILD_DIR/bin:$PATH"
 
-STACK="${STACK:-scalingo-18}"
+STACK="${STACK:-scalingo-20}"
 
 start "Install Keycloak"
 
@@ -33,93 +32,47 @@ else
 fi
 
 if [[ $KEYCLOAK_VERSION == "latest" ]]; then
-  KEYCLOAK_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "keycloak/keycloak" "12.0.4")
+  KEYCLOAK_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "keycloak/keycloak")
 fi
 
 if [ ! -d "${KEYCLOAK_PATH}" ]; then
-  fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
-  mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
-else
-  warn "Keycloak already installed"
-  if [[ -f "${ENV_DIR}/KEYCLOAK_MIGRATION" ]]; then
-    KEYCLOAK_MIGRATION=$(cat "$ENV_DIR/KEYCLOAK_MIGRATION")
-  else
-    KEYCLOAK_MIGRATION=0
-  fi
-  if [[ -f "${ENV_DIR}/KEYCLOAK_CLUSTER_MODE" ]]; then
-    KEYCLOAK_CLUSTER_MODE=$(cat "$ENV_DIR/KEYCLOAK_CLUSTER_MODE")
-  else
-    KEYCLOAK_CLUSTER_MODE="standalone"
-  fi
-  if [ $KEYCLOAK_MIGRATION == "1" ]; then
-    info "Keycloak migration into ${KEYCLOAK_VERSION}"
-    mv "/app/keycloak" "${TMP_PATH}/keycloak-backup"
+  if [[ -n "${KEYCLOAK_VERSION}" ]]; then
     fetch_keycloak_dist "${KEYCLOAK_VERSION}" "${TMP_PATH}" | indent
     mv "${TMP_PATH}/keycloak-${KEYCLOAK_VERSION}" "${KEYCLOAK_PATH}"
-    cp -r "${TMP_PATH}/keycloak-backup/standalone" "${KEYCLOAK_PATH}/standalone"
-    cp -r "${TMP_PATH}/keycloak-backup/domain" "${KEYCLOAK_PATH}/domain"
-    cp -r "${TMP_PATH}/keycloak-backup/standalone" "${KEYCLOAK_PATH}/standalone"
-    "${KEYCLOAK_PATH}/bin/jboss-cli.sh --file=${KEYCLOAK_PATH}/bin/migrate-$KEYCLOAK_CLUSTER_MODE.cli"
   fi
+else
+  warn "Keycloak already installed"
 fi
 info "Using keycloak version: ${KEYCLOAK_VERSION}" | indent
 finished
 
-start "Fetch keycloak tools"
-fetch_keycloak_tools "${KEYCLOAK_VERSION}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
-finished
 
-if [[ -f "${ENV_DIR}/FRANCE_CONNECT_VERSION" ]]; then
-  FRANCE_CONNECT_VERSION=$(cat "${ENV_DIR}/FRANCE_CONNECT_VERSION")
+step "Adding providers"
+if [[ -f "${ENV_DIR}/KEYCLOAK_PROVIDERS" ]]; then
+  KEYCLOAK_PROVIDERS=$(cat "${ENV_DIR}/KEYCLOAK_PROVIDERS")
+  IFS=','
+  read -ra PROVIDERS <<< "${KEYCLOAK_PROVIDERS}"
+  for PROVIDER_REPO in "${PROVIDERS[@]}"; do   
+    PROVIDER_NAME=$(get_provider_name "${PROVIDER_REPO}")
+    PROVIDER_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "${PROVIDER_REPO}")
+    start "Add provider ${PROVIDER_NAME} ${PROVIDER_VERSION}"
+    if [[ ! "${PROVIDER_VERSION}" == "" ]]; then
+      fetch_provider_dist "${PROVIDER_REPO}" "${PROVIDER_VERSION}" "${TMP_PATH}" "${KEYCLOAK_PATH}" | indent
+      finished
+    else
+      warn "unable to fetch ${PROVIDER_REPO} latest release"
+    fi
+  done
+  IFS=' ' 
+fi
+
+if [[ -f "$ENV_DIR/KC_DB" ]]; then
+  KC_DB=$(cat "$ENV_DIR/KC_DB")
 else
-  FRANCE_CONNECT_VERSION="latest"
+  KC_DB="postgres"
 fi
-
-if [[ $FRANCE_CONNECT_VERSION == "latest" ]]; then
-  FRANCE_CONNECT_VERSION=$(fetch_github_latest_release "${TMP_PATH}" "InseeFr/Keycloak-FranceConnect" "2.3")
-fi
-
-start "Add plugin france connect ${FRANCE_CONNECT_VERSION}"
-fetch_france_connect_dist "${FRANCE_CONNECT_VERSION}" "${TMP_PATH}" "${KEYCLOAK_PATH}" | indent
-finished
-
-start "Configure postgresql module"
-if [[ -f "${ENV_DIR}/JDBC_POSTGRES_VERSION" ]]; then
-  JDBC_POSTGRES_VERSION=$(cat "${ENV_DIR}/JDBC_POSTGRES_VERSION")
-else
-  JDBC_POSTGRES_VERSION="42.2.20"
-fi
-info "Using JDBC postgresql version: ${JDBC_POSTGRES_VERSION}" | indent
-configure_postgres_module "${JDBC_POSTGRES_VERSION}" "${KEYCLOAK_PATH}" "${TOOLS_PATH}" | indent
-finished
-
-start "Configure keycloak"
-configure_keycloak "${KEYCLOAK_PATH}" "${TOOLS_PATH}" "${TMP_PATH}" | indent
-rm -rf "${KEYCLOAK_PATH}/standalone/tmp/auth"
-rm -rf "${KEYCLOAK_PATH}/domain/tmp/auth"
-finished
-
-start "Add keycloak admin user"
-if [[ -f "${ENV_DIR}/KEYCLOAK_ADMIN_USERNAME" && -f "${ENV_DIR}/KEYCLOAK_ADMIN_PASSWORD" ]]; then
-  KEYCLOAK_ADMIN_USERNAME=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_USERNAME")
-  KEYCLOAK_ADMIN_PASSWORD=$(cat "$ENV_DIR/KEYCLOAK_ADMIN_PASSWORD")
-fi
-"${KEYCLOAK_PATH}"/bin/add-user-keycloak.sh -r master -u "$KEYCLOAK_ADMIN_USERNAME" -p "$KEYCLOAK_ADMIN_PASSWORD"
-finished
-
-start "Building run"
-cp "${TOOLS_PATH}/docker-entrypoint.sh" "${TMP_PATH}/run"
-if [[ -f "${ENV_DIR}/JBOSS_HTTP_PORT" ]]; then
-  JBOSS_HTTP_PORT=$(cat "$ENV_DIR/JBOSS_HTTP_PORT")
-  sed -i "/vault.sh/a SYS_PROPS+=\" -Djboss.http.port=${JBOSS_HTTP_PORT}\"" "${TMP_PATH}/run"
-fi
-if [[ -f "${ENV_DIR}/KEYCLOAK_FRONTEND_URL" ]]; then
-  KEYCLOAK_FRONTEND_URL=$(cat "$ENV_DIR/KEYCLOAK_FRONTEND_URL")
-  sed -i "/vault.sh/a SYS_PROPS+=\" -Dkeycloak.frontendUrl=${KEYCLOAK_FRONTEND_URL}\"" "${TMP_PATH}/run"
-fi
-mv "${TMP_PATH}/run" "${BUILD_DIR}/bin/run"
-chmod +x "${BUILD_DIR}/bin/run"
-finished
+step "COnfiguring the ${KC_DB} vendor"
+"${KEYCLOAK_PATH}/bin/kc.sh" build --db ${KC_DB}
 
 step "Cleaning up tmp files"
 rm -rf "${TMP_PATH}"

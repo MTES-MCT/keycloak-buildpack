@@ -4,6 +4,13 @@
 
 [![Deploy to Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/MTES-MCT/keycloak-buildpack)
 
+## Suitability of releases
+
+| Keycloak ---------| Buildpack |
+|-------------------|-----------|
+| < 17   (quarkus)  | 0.1.0     |
+| >= 17  (wildfly)  | 0.2.0     |
+
 ## Usage
 
 [Add this buildpack environment variable][1] to your Scalingo application to install the `Keycloak` server:
@@ -12,23 +19,19 @@
 BUILDPACK_URL=https://github.com/MTES-MCT/keycloak-buildpack
 ```
 
-Default version is `11.0.2`, but you can choose another one:
+Default version Keycloak is `latest` found in github releases, but you can choose another one:
 
 ```shell
-scalingo env-set KEYCLOAK_VERSION=10.0.2
+scalingo env-set KEYCLOAK_VERSION=17.0.0
 ```
 
-See [Keycloak docs](https://github.com/keycloak/keycloak-containers/tree/master/server) to use keycloak image server.
+See [Keycloak latest docs](https://github.com/keycloak/keycloak-containers/tree/master/server-x) to use keycloak quarkus image server.
 
 ## Configuration
 
 You must have an add-on database `postgresql`.
 
-Environment variables are set in a `.env` file. You copy the sample one:
-
-```shell
-cp .env.sample .env
-```
+Environment variables are listed in [Keycloak quarkus configuration doc](https://www.keycloak.org/server/all-config), starting with `KC_`
 
 ### Add a user admin
 
@@ -60,10 +63,16 @@ With [scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archiv
 
 ## Hacking
 
+Environment variables are set in a `.env` file. You copy the sample one:
+
+```shell
+cp .env.sample .env
+```
+
 Run an interactive docker scalingo stack:
 
 ```shell
- docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-18:latest bash
+ docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-20:latest bash
 ```
 
 And test in it:
@@ -78,14 +87,15 @@ bash buildpack/bin/release
 Run Keycloak server:
 
 ```shell
-export PATH=$PATH:/app/java/bin
-./bin/run -b 0.0.0.0
+export PATH=$PATH:/build/java/bin
+build/keycloak/bin/kc.sh start 
 ```
 
-You can also use docker-compose stack:
+You can also use docker-compose stack [2]:
 
 ```shell
 docker-compose up --build -d
 ```
 
 [1]: https://doc.scalingo.com/platform/deployment/buildpacks/custom
+[2]: https://github.com/keycloak/keycloak-containers

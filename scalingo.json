@@ -12,7 +12,7 @@
     },
     "STACK": {
       "description": "scalingo stack",
-      "value": "scalingo-18",
+      "value": "scalingo-20",
       "required": false
     },
     "JQ_VERSION": {
@@ -25,32 +25,32 @@
       "value": "11",
       "required": false
     },
-    "JBOSS_HTTP_PORT": {
-      "description": "JBOSS HTTP port to listen (same as Scalingo PORT)",
-      "value": "$PORT",
-      "required": true
-    },
     "KEYCLOAK_VERSION": {
       "description": "keycloak version",
       "value": "latest",
       "required": false
     },
-    "KEYCLOAK_MIGRATION": {
-      "description": "keycloak upgrade version 1 (yes) or 0 (default false)",
-      "value": "0",
-      "required": false
+    "KC_PROXY": {
+      "description": "see https://www.keycloak.org/server/reverseproxy",
+      "value": "edge",
+      "required": true
     },
-    "KEYCLOAK_FRONTEND_URL": {
-      "description": "site url",
+    "KC_HOSTNAME": {
+      "description": "host:port",
       "value": "",
       "required": false
     },
-    "KEYCLOAK_CLUSTER_MODE": {
-      "description": "cluster mode",
-      "value": "standalone",
+    "KC_HTTP_PORT": {
+      "description": "keycloak HTTP listening port (same as Scalingo PORT)",
+      "value": "$PORT",
       "required": true
     },
-    "KEYCLOAK_ADMIN_USERNAME": {
+    "KC_HTTPS_PORT": {
+      "description": "keycloak HTTPS listening port (same as Scalingo HTTPS PORT)",
+      "value": "8443",
+      "required": true
+    },
+    "KEYCLOAK_ADMIN": {
       "description": "admin username",
       "value": "",
       "required": true
@@ -60,33 +60,33 @@
       "value": "",
       "required": false
     },
-    "FRANCE_CONNECT_VERSION": {
-      "description": "france connect plugin version",
-      "value": "latest",
-      "required": false
-    },
-    "DB_VENDOR": {
+    "KC_DB": {
       "description": "database vendor (default postgres)",
       "value": "postgres",
       "required": false
     },
-    "DB_USER": {
+    "KC_DB_SCHEMA": {
+      "description": "database schema",
+      "value": "public",
+      "required": false
+    },
+    "KC_DB_URL_HOST": {
+      "description": "database host",
+      "value": "localhost",
+      "required": true
+    },
+    "KC_DB_USERNAME": {
       "description": "database username",
       "value": "",
       "required": true
     },
-    "DB_PASSWORD": {
+    "KC_DB_PASSWORD": {
       "description": "database password",
       "value": "",
       "required": true
     },
-    "DB_DATABASE": {
-      "description": "database name",
-      "value": "",
-      "required": true
-    },
-    "DB_ADDR": {
-      "description": "database host:port",
+    "PROVIDERS": {
+      "description": "comma list providers",
       "value": "",
       "required": true
     },

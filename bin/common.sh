@@ -134,17 +134,25 @@ function install_jre() {
 
 function fetch_github_latest_release() {
   local location="$1"
-  local latest_release_repo="$2"
-  local default_latest_release="$3"
+  local repo="$2"
+  local repo_checksum
+  repo_checksum=$(printf "%s" "${repo}" | sha256sum | grep -o '^\S\+')
   local http_code
-  http_code=$($CURL -G -o "$TMP_PATH/latest_release.json" -w '%{http_code}' -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${latest_release_repo}/releases/latest")
+  if [[ -f "$ENV_DIR/GITHUB_ID" ]]; then
+    GITHUB_ID=$(cat "$ENV_DIR/GITHUB_ID")
+  fi
+  if [[ -f "$ENV_DIR/GITHUB_SECRET" ]]; then
+    GITHUB_SECRET=$(cat "$ENV_DIR/GITHUB_SECRET")
+  fi
+  local latest_release_url
+  latest_release_url="https://api.github.com/repos/${repo}/releases/latest"
+  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "${TMP_PATH}/latest_release_${repo_checksum}.json" -w '%{http_code}' -u "${GITHUB_ID}:${GITHUB_SECRET}" -H "Accept: application/vnd.github.v3+json" "${latest_release_url}")
   local latest_release_version
+  latest_release_version=""
   if [[ $http_code == 200 ]]; then
-    latest_release_version=$(cat "$TMP_PATH/latest_release.json" | jq '.tag_name' | xargs)
+    latest_release_version=$(< "${TMP_PATH}/latest_release_${repo_checksum}.json" jq '.tag_name' | xargs)
     latest_release_version="${latest_release_version%\"}"
     latest_release_version="${latest_release_version#\"}"
-  else
-    latest_release_version="$default_latest_release"
   fi
   echo "$latest_release_version"
 }
@@ -152,14 +160,13 @@ function fetch_github_latest_release() {
 function fetch_keycloak_dist() {
   local version="$1"
   local location="$2"
-
   local dist="keycloak-${version}.tar.gz"
   local dist_url
   local download_url
-  local RE='[^0-9]*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)'
   local major_version
-  major_version=$(echo $version | sed -e "s#$RE#\1#")
-  if [[ $major_version -gt 11 ]]; then
+  major_version="${version%.*}"
+  major_version="${major_version%.*}"
+  if [[ "${major_version}" -gt 11 ]]; then
     download_url="https://github.com/keycloak/keycloak/releases/download/${version}"
   else
     download_url="https://downloads.jboss.org/keycloak/${version}"
@@ -194,64 +201,31 @@ function fetch_keycloak_dist() {
   finished
 }
 
-function fetch_france_connect_dist() {
-  local version="$1"
-  local location="$2"
-  local dest="$3"
+function get_provider_name() {
+  local provider_repo="$1"
+  local provider_name
+  IFS='/'
+  read -ra repo <<< "${provider_repo}"
+  provider_name="${repo[1]}"
+  provider_name="${provider_name%\"}"
+  provider_name="${provider_name#\"}"
+  echo "${provider_name}"
+}
 
-  local dist="keycloak-franceconnect-${version}.jar"
-  local dist_url="https://github.com/InseeFr/Keycloak-FranceConnect/releases/download/${version}/${dist}"
+function fetch_provider_dist() {
+  local provider_repo="$1"
+  local version="$2"
+  local location="$3"
+  local dest="$4"
+  local provider_name
+  provider_name=$(get_provider_name "${provider_repo}")
+  local dist="${provider_name}-${version}.jar"
+  local dist_url="https://github.com/${provider_repo}/releases/download/${version}/${dist}"
   if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
     info "File is already downloaded"
   else
-    ${CURL} -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
+    curl -L --retry 15 --retry-delay 2 -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
   fi
   cp "${CACHE_DIR}/dist/${dist}" "${location}"
-  mv "${location}/keycloak-franceconnect-${FRANCE_CONNECT_VERSION}.jar" "${dest}/standalone/deployments/keycloak-franceconnect.jar"
-}
-
-function fetch_keycloak_tools() {
-  local version="$1"
-  local location="$2"
-  local tmp="$3"
-
-  local tools_repo_url="https://github.com/keycloak/keycloak-containers"
-  git clone --depth 1 --branch "${version}" "${tools_repo_url}" "${tmp}/keycloak-containers" >/dev/null 2>&1
-  mv "${tmp}/keycloak-containers/server/tools" "${location}"
-  rm -rf "${tmp}/keycloak-containers"
-}
-
-function configure_postgres_module() {
-  local version="$1"
-  local keycloak_path="$2"
-  local tools_path="$3"
-
-  mkdir -p "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main"
-  cd "${keycloak_path}/modules/system/layers/base/org/postgresql/jdbc/main" || return
-  local jdbc_postgresql_url="https://jdbc.postgresql.org/download/postgresql-${version}.jar"
-  curl -L -s "${jdbc_postgresql_url}" >postgres-jdbc.jar
-  cp "${tools_path}/databases/postgres/module.xml" .
-}
-
-function configure_keycloak() {
-  local keycloak_path="$1"
-  local tools_path="$2"
-  find "${tools_path}" -type f -name '*.sh' -exec chmod +x {} \;
-  find "${keycloak_path}" -type f -name '*.sh' -exec chmod +x {} \;
-  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
-  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
-  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
-  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|\/opt\/jboss|${BUILD_DIR}|g" {} \;
-  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
-  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
-  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
-  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|\/app|${BUILD_DIR}|g" {} \;
-  "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-configuration.cli"
-  rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
-  "${keycloak_path}/bin/jboss-cli.sh" --file="${tools_path}/cli/standalone-ha-configuration.cli"
-  rm -rf "${keycloak_path}/standalone/configuration/standalone_xml_history"
-  find "${tools_path}" -type f -name '*.cli' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
-  find "${keycloak_path}" -type f -name '*.cli' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
-  find "${tools_path}" -type f -name '*.sh' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
-  find "${keycloak_path}" -type f -name '*.sh' -exec sed -i "s|${BUILD_DIR}|\/app|g" {} \;
+  mv "${location}/${provider_name}-${version}.jar" "${dest}/providers/${provider_name}.jar"
 }
