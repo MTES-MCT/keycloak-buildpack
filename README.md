@@ -46,20 +46,9 @@ then build again.
 
 ### Export or import data
 
-```shell
-/app/keycloak/bin/standalone.sh \
--Djboss.socket.binding.port-offset=100 -Dkeycloak.migration.action=export \
--Dkeycloak.migration.provider=singleFile \
--Dkeycloak.migration.realmName=my_realm \
--Dkeycloak.migration.usersExportStrategy=REALM_FILE \
--Dkeycloak.migration.file=/tmp/my_realm.json
-```
+See [Keycloak Admin CLI docs](https://www.keycloak.org/docs/latest/server_admin/index.html#admin-cli)
 
-Don't forget the `-Djboss.socket.binding.port-offset=100` change ports to not stop server running.
-
-You can do the same with import. See [Export/import docs](https://www.keycloak.org/docs/latest/server_admin/index.html#_export_import)
-
-With [scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archive-and-extract-it-on-the-server) you can download or upload these files.
+With [Scalingo CLI](https://doc.scalingo.com/platform/app/tasks#upload-an-archive-and-extract-it-on-the-server) you can download or upload these files.
 
 ## Hacking
 
