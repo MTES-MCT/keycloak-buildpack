@@ -6,10 +6,10 @@
 
 ## Suitability of releases
 
-| Keycloak ---------| Buildpack |
+| Keycloak          | Buildpack |
 |-------------------|-----------|
-| < 17   (quarkus)  | 0.1.0     |
-| >= 17  (wildfly)  | 0.2.0     |
+| < 17   (wildfly)  | 0.1.0     |
+| >= 17  (quarkus)  | 0.2.0     |
 
 ## Usage
 
