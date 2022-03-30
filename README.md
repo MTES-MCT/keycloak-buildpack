@@ -77,7 +77,7 @@ Run Keycloak server:
 
 ```shell
 export PATH=$PATH:/build/java/bin
-build/keycloak/bin/kc.sh start 
+build/keycloak/bin/kc.sh start --auto-build
 ```
 
 You can also use docker-compose stack [2]:
