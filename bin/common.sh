@@ -239,10 +239,10 @@ function add_templates() {
     #echo "CP_KEYCLOAK_THEME: ${CP_KEYCLOAK_THEME}" 
     #echo "./keycloak/themes: $(ls -al ./keycloak/themes)"
     echo "!-!_!-! pwd : $(pwd)"
-    echo "current dir: $(ls -al .)"
-    echo "keycloak_templates_dir: ${keycloak_template_dir}"
-    echo "ls keycloak_templates_dir: $(ls -al ${keycloak_template_dir})"
-    echo "ls keycloak_templates_dir/*: $(ls -al ${keycloak_template_dir}/*)"
+    #echo "current dir: $(ls -al .)"
+    echo "keycloak_templates_dir: ${keycloak_templates_dir}"
+    echo "ls keycloak_templates_dir: $(ls -al ${keycloak_templates_dir})"
+    echo "ls keycloak_templates_dir/*: $(ls -al ${keycloak_templates_dir}/*)"
   else
     echo "!!!___ KEYCLOAK_TEMPLATES_DIR does not exist ___!!!"
   fi
