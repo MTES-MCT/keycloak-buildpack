@@ -69,6 +69,7 @@ fi
 step "Adding templates"
 if [[ -f "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR" ]]; then
   KEYCLOAK_TEMPLATES_DIR=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
+  echo "----> KEYCLOAK_TEMPLATES_DIR : ${KEYCLOAK_TEMPLATES_DIR}"
   add_templates "${KEYCLOAK_TEMPLATES_DIR}"
 fi
 
