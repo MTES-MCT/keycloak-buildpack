@@ -230,11 +230,14 @@ function fetch_provider_dist() {
   mv "${location}/${provider_name}-${version}.jar" "${dest}/providers/${provider_name}.jar"
 }
 
-function add_template() {
-  local keycloak_template_dir="$1"
-  if [ -d "${keycloak_template_dir}" ]; then
-    echo "KEYCLOAK_TEMPLATE_DIR: $(ls -al ${keycloak_template_dir})"
+function add_templates() {
+  local keycloak_templates_dir="$1"
+  if [ -d "${keycloak_templates_dir}" ]; then
+    #echo "KEYCLOAK_TEMPLATES_DIR: $(ls -al ${keycloak_templates_dir})"
+    CP_KEYCLOAK_THEME=$(cp -R "${keycloak_templates_dir}/*" "./keycloak/themes")
+    echo "CP_KEYCLOAK_THEME: ${CP_KEYCLOAK_THEME}" 
+    echo "./keycloak/themes: $(ls -al ./keycloak/themes)"
   else
-    echo "!!!___ KEYCLOAK_TEMPLATE_DIR does not exist ___!!!"
+    echo "!!!___ KEYCLOAK_TEMPLATES_DIR does not exist ___!!!"
   fi
 }
