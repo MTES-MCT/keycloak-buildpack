@@ -229,3 +229,12 @@ function fetch_provider_dist() {
   cp "${CACHE_DIR}/dist/${dist}" "${location}"
   mv "${location}/${provider_name}-${version}.jar" "${dest}/providers/${provider_name}.jar"
 }
+
+function add_template() {
+  local keycloak_template_dir="$1"
+  if [ -d "${keycloak_template_dir}" ]; then
+    echo "KEYCLOAK_TEMPLATE_DIR: ${keycloak_template_dir}"
+  else
+    echo "!!!___ KEYCLOAK_TEMPLATE_DIR does not exist ___!!!"
+  fi
+}
