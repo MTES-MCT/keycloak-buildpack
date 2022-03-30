@@ -69,7 +69,7 @@ fi
 step "Adding template"
 if [[ -f "${ENV_DIR}/KEYCLOAK_TEMPLATE_DIR" ]]; then
   KEYCLOAK_TEMPLATE_DIR=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATE_DIR")
-  add_template($KEYCLOAK_TEMPLATE_DIR)
+  add_template "${KEYCLOAK_TEMPLATE_DIR}"
 fi
 
 if [[ -f "$ENV_DIR/KC_DB" ]]; then
