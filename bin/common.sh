@@ -233,7 +233,7 @@ function fetch_provider_dist() {
 function add_template() {
   local keycloak_template_dir="$1"
   if [ -d "${keycloak_template_dir}" ]; then
-    echo "KEYCLOAK_TEMPLATE_DIR: ${keycloak_template_dir}"
+    echo "KEYCLOAK_TEMPLATE_DIR: $(ls -al ${keycloak_template_dir})"
   else
     echo "!!!___ KEYCLOAK_TEMPLATE_DIR does not exist ___!!!"
   fi
