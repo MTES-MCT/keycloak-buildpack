@@ -7,5 +7,5 @@ addons:
 config_vars:
   PATH: "/app/bin:/app/keycloak/bin:/app/java/bin:/usr/local/bin:/usr/bin:/bin"
 default_process_types:
-  web: /app/keycloak/bin/kc.sh start
+  web: /app/keycloak/bin/kc.sh start --auto-build
 EOF
