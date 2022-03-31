@@ -231,18 +231,13 @@ function fetch_provider_dist() {
 }
 
 function add_templates() {
-  #local keycloak_templates_dir="$1"
-  local keycloak_templates_dir=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
+  local keycloak_templates_dir="$1"
+  local keycloak_path="$2"
+  #local keycloak_templates_dir=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
   if [ -d "${keycloak_templates_dir}" ]; then
-    #echo "KEYCLOAK_TEMPLATES_DIR: $(ls -al ${keycloak_templates_dir})"
-    CP_KEYCLOAK_THEME=$(cp -R "${keycloak_templates_dir}"/* "./keycloak/themes")
+    CP_KEYCLOAK_THEME=$(cp -R "${keycloak_templates_dir}"/* "${keycloak_path}/themes")
     echo "CP_KEYCLOAK_THEME: ${CP_KEYCLOAK_THEME}" 
-    #echo "./keycloak/themes: $(ls -al ./keycloak/themes)"
-    #echo "!-!_!-! pwd : $(pwd)"
-    #echo "current dir: $(ls -al .)"
-    #echo "keycloak_templates_dir: ${keycloak_templates_dir}"
-    #echo "ls keycloak_templates_dir: $(ls -al ${keycloak_templates_dir})"
-    echo "ls ./keycloak/themes: $(ls ./keycloak/themes)"
+    echo "{keycloak_path} : ls ${keycloak_path}/themes: $(ls ${keycloak_path}/themes)"
     #echo "ls keycloak_templates_dir/*: $(ls -al ${keycloak_templates_dir}/*)"
   else
     echo "!!!___ KEYCLOAK_TEMPLATES_DIR does not exist ___!!!"
