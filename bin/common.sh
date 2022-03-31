@@ -235,7 +235,6 @@ function add_templates() {
   local keycloak_path="$2"
   if [ -d "${keycloak_templates_dir}" ]; then
     cp_keycloak_themes=$(cp -R "${keycloak_templates_dir}"/* "${keycloak_path}/themes")
-    #if [ -n "$BUILDPACK_DEBUG" -a "${cp_keycloak_themes}" != "" ]; then
     if [ "${cp_keycloak_themes}" != "" ]; then
       echo "copy keycloak themes: ${cp_keycloak_themes}"
     fi
