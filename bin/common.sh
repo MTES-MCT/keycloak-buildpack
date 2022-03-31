@@ -233,13 +233,15 @@ function fetch_provider_dist() {
 function add_templates() {
   local keycloak_templates_dir="$1"
   local keycloak_path="$2"
-  #local keycloak_templates_dir=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
   if [ -d "${keycloak_templates_dir}" ]; then
-    CP_KEYCLOAK_THEME=$(cp -R "${keycloak_templates_dir}"/* "${keycloak_path}/themes")
-    echo "CP_KEYCLOAK_THEME: ${CP_KEYCLOAK_THEME}" 
-    echo "{keycloak_path} : ls ${keycloak_path}/themes: $(ls ${keycloak_path}/themes)"
-    #echo "ls keycloak_templates_dir/*: $(ls -al ${keycloak_templates_dir}/*)"
+    cp_keycloak_themes=$(cp -R "${keycloak_templates_dir}"/* "${keycloak_path}/themes")
+    #if [ -n "$BUILDPACK_DEBUG" -a "${cp_keycloak_themes}" != "" ]; then
+    if [ "${cp_keycloak_themes}" != "" ]; then
+      echo "copy keycloak themes: ${cp_keycloak_themes}"
+    fi
   else
-    echo "!!!___ KEYCLOAK_TEMPLATES_DIR does not exist ___!!!"
+    if [ -n "$BUILDPACK_DEBUG" ]; then
+      echo "KEYCLOAK_TEMPLATES_DIR defined and ${keycloak_templates_dir} dir does not exist!!!"
+    fi
   fi
 }
