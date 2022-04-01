@@ -229,3 +229,18 @@ function fetch_provider_dist() {
   cp "${CACHE_DIR}/dist/${dist}" "${location}"
   mv "${location}/${provider_name}-${version}.jar" "${dest}/providers/${provider_name}.jar"
 }
+
+function add_templates() {
+  local keycloak_templates_dir="$1"
+  local keycloak_path="$2"
+  if [ -d "${keycloak_templates_dir}" ]; then
+    cp_keycloak_themes=$(cp -R "${keycloak_templates_dir}"/* "${keycloak_path}/themes")
+    if [ "${cp_keycloak_themes}" != "" ]; then
+      echo "copy keycloak themes: ${cp_keycloak_themes}"
+    fi
+  else
+    if [ -n "$BUILDPACK_DEBUG" ]; then
+      echo "KEYCLOAK_TEMPLATES_DIR defined and ${keycloak_templates_dir} dir does not exist!!!"
+    fi
+  fi
+}
