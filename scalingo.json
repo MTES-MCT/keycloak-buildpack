@@ -50,7 +50,7 @@
       "value": "443",
       "required": true
     },
-    "KEYCLOAK_ADMIN_USERNAME": {
+    "KEYCLOAK_ADMIN": {
       "description": "admin username",
       "value": "",
       "required": true

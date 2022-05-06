@@ -38,7 +38,7 @@ Environment variables are listed in [Keycloak quarkus configuration doc](https:/
 In .env set these vars:
 
 ```shell
-KEYCLOAK_ADMIN_USERNAME=your-admin-name
+KEYCLOAK_ADMIN=your-admin-name
 KEYCLOAK_ADMIN_PASSWORD=your-admin-password
 ```
 
