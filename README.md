@@ -16,7 +16,7 @@
 [Add this buildpack environment variable][1] to your Scalingo application to install the `Keycloak` server:
 
 ```shell
-BUILDPACK_URL=https://github.com/MTES-MCT/keycloak-buildpack
+BUILDPACK_URL=https://github.com/tchapgouv/keycloak-buildpack
 ```
 
 Default version Keycloak is `latest` found in github releases, but you can choose another one:
