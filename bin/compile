@@ -66,6 +66,18 @@ if [[ -f "${ENV_DIR}/KEYCLOAK_PROVIDERS" ]]; then
   IFS=' ' 
 fi
 
+step "Adding providers from local build"
+KEYCLOAK_CUSTOM_PROVIDER_DIR="target"
+if [[ -f "${ENV_DIR}/KEYCLOAK_CUSTOM_PROVIDER_DIR" ]]; then
+  KEYCLOAK_CUSTOM_PROVIDER_DIR=$(cat "${ENV_DIR}/KEYCLOAK_CUSTOM_PROVIDER_DIR")
+fi
+if [[ -d "${BUILD_DIR}/${KEYCLOAK_CUSTOM_PROVIDER_DIR}" ]]; then
+  jar_file=$(find "${BUILD_DIR}/${KEYCLOAK_CUSTOM_PROVIDER_DIR}"/*.jar | head -n 1)
+  start "Installing jars ${jar_file}"
+  cp "${jar_file}" "${KEYCLOAK_PATH}/providers/"
+  finished
+fi
+
 step "Adding templates"
 if [[ -f "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR" ]]; then
   KEYCLOAK_TEMPLATES_DIR=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
