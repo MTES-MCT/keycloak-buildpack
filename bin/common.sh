@@ -214,6 +214,7 @@ function get_provider_name() {
 
 function fetch_provider_dist() {
   local provider_repo="$1"
+  provider_repo=${provider_repo%%:*}
   local version="$2"
   local location="$3"
   local dest="$4"
@@ -221,6 +222,7 @@ function fetch_provider_dist() {
   provider_name=$(get_provider_name "${provider_repo}")
   local dist="${provider_name}-${version}.jar"
   local dist_url="https://github.com/${provider_repo}/releases/download/${version}/${dist}"
+  info "dist_url: ${dist_url}"
   if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
     info "File is already downloaded"
   else
