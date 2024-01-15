@@ -22,7 +22,7 @@
     },
     "JRE_MAJOR_VERSION": {
       "description": "Java version",
-      "value": "latest",
+      "value": "11",
       "required": false
     },
     "KEYCLOAK_VERSION": {
