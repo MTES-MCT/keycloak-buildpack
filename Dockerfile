@@ -15,4 +15,4 @@ EXPOSE 8443
 
 RUN sed -i "/esac/a export PATH=\$PATH:\/app\/java\/bin" "/app/keycloak/bin/kc.sh"
 
-ENTRYPOINT [ "/app/keycloak/bin/kc.sh", "start", "--auto-build" ]
+ENTRYPOINT [ "/app/keycloak/bin/kc.sh", "start"]
