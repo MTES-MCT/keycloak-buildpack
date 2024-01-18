@@ -40,14 +40,9 @@
       "value": "",
       "required": false
     },
-    "KC_HTTP_PORT": {
+    "KC_HOSTNAME_PORT": {
       "description": "keycloak HTTP listening port (same as Scalingo PORT)",
       "value": "$PORT",
-      "required": true
-    },
-    "KC_HTTPS_PORT": {
-      "description": "keycloak HTTPS listening port (same as Scalingo HTTPS PORT)",
-      "value": "443",
       "required": true
     },
     "KEYCLOAK_ADMIN": {
