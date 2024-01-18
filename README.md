@@ -64,7 +64,7 @@ cp .env.sample .env
 Run an interactive docker scalingo stack [2]:
 
 ```shell
-docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-22:latest bash
+docker run --name keycloak -it -p 8443:8443 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-22:latest bash
 ```
 
 And test in it:
@@ -73,6 +73,7 @@ And test in it:
 bash buildpack/bin/detect
 bash buildpack/bin/env.sh /env/.env /env
 bash buildpack/bin/compile /build /cache /env
+build/java/bin/keytool -genkeypair -storepass password -storetype PKCS12 -keyalg RSA -keysize 2048 -dname "CN=server" -alias server -ext "SAN:c=DNS:localhost,IP:127.0.0.1" -keystore /build/keycloak/conf/server.keystore
 bash buildpack/bin/release
 ```
 
@@ -82,9 +83,10 @@ Run Keycloak server:
 export PATH=$PATH:/build/java/bin
 export KEYCLOAK_ADMIN=
 export KEYCLOAK_ADMIN_PASSWORD=
+export KC_DB=postgres
 export KC_HOSTNAME=localhost
-export PORT=8443
-build/keycloak/bin/kc.sh --verbose start --hostname-port $PORT
+export KC_HOSTNAME_PORT=8443
+build/keycloak/bin/kc.sh --verbose start
 ```
 
 You can also use docker-compose stack [3]:
