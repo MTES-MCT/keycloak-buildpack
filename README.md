@@ -10,6 +10,7 @@
 |-------------------|-----------|
 | < 17   (wildfly)  | 0.1.0     |
 | >= 17  (quarkus)  | 0.2.0     |
+| >= 23  (quarkus)  | 1.0.0     |
 
 ## Usage
 
@@ -22,10 +23,12 @@ BUILDPACK_URL=https://github.com/MTES-MCT/keycloak-buildpack
 Default version Keycloak is `latest` found in github releases, but you can choose another one:
 
 ```shell
-scalingo env-set KEYCLOAK_VERSION=17.0.0
+scalingo env-set KEYCLOAK_VERSION=23.0.4
 ```
 
-See [Keycloak latest docs](https://github.com/keycloak/keycloak-containers/tree/master/server-x) to use keycloak quarkus image server.
+See [Keycloak latest docs](https://www.keycloak.org/server/containers) to use keycloak quarkus image server.
+
+!!! HTTPS is mandatory in production mode [4]
 
 ## Configuration
 
@@ -58,10 +61,10 @@ Environment variables are set in a `.env` file. You copy the sample one:
 cp .env.sample .env
 ```
 
-Run an interactive docker scalingo stack:
+Run an interactive docker scalingo stack [2]:
 
 ```shell
- docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-20:latest bash
+docker run --name keycloak -it -p 8080:8080 -v "$(pwd)"/.env:/env/.env -v "$(pwd)":/buildpack scalingo/scalingo-22:latest bash
 ```
 
 And test in it:
@@ -77,14 +80,20 @@ Run Keycloak server:
 
 ```shell
 export PATH=$PATH:/build/java/bin
-build/keycloak/bin/kc.sh start --auto-build
+export KEYCLOAK_ADMIN=
+export KEYCLOAK_ADMIN_PASSWORD=
+export KC_HOSTNAME=localhost
+export PORT=8443
+build/keycloak/bin/kc.sh --verbose start --hostname-port $PORT
 ```
 
-You can also use docker-compose stack [2]:
+You can also use docker-compose stack [3]:
 
 ```shell
 docker-compose up --build -d
 ```
 
 [1]: https://doc.scalingo.com/platform/deployment/buildpacks/custom
-[2]: https://github.com/keycloak/keycloak-containers
+[2]: https://www.keycloak.org/server/containers
+[3]: https://github.com/keycloak/keycloak/tree/main/quarkus/container
+[4]: https://www.keycloak.org/server/containers#_starting_the_optimized_keycloak_docker_image

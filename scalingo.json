@@ -12,17 +12,17 @@
     },
     "STACK": {
       "description": "scalingo stack",
-      "value": "scalingo-20",
+      "value": "scalingo-22",
       "required": false
     },
     "JQ_VERSION": {
       "description": "JQ version",
-      "value": "1.6",
+      "value": "1.7.1",
       "required": false
     },
     "JRE_MAJOR_VERSION": {
       "description": "Java version",
-      "value": "11",
+      "value": "17",
       "required": false
     },
     "KEYCLOAK_VERSION": {

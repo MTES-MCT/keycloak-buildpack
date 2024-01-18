@@ -80,8 +80,41 @@ if [[ -f "$ENV_DIR/KC_DB" ]]; then
 else
   KC_DB="postgres"
 fi
-step "Configuring the ${KC_DB} vendor"
-"${KEYCLOAK_PATH}/bin/kc.sh" build --db ${KC_DB}
+
+info "Using KC_DB=${KC_DB}" | indent
+
+if [[ -f "$ENV_DIR/KC_HOSTNAME" ]]; then
+  KC_HOSTNAME=$(cat "$ENV_DIR/KC_HOSTNAME")
+else
+  KC_HOSTNAME="localhost"
+fi
+
+info "Using KC_HOSTNAME=${KC_HOSTNAME}" | indent
+
+if [[ -f "$ENV_DIR/KC_HEALTH_ENABLED" ]]; then
+  KC_HEALTH_ENABLED=$(cat "$ENV_DIR/KC_HEALTH_ENABLED")
+else
+  KC_HEALTH_ENABLED=true
+fi
+
+info "Using KC_HEALTH_ENABLED=${KC_HEALTH_ENABLED}" | indent
+
+if [[ -f "$ENV_DIR/KC_METRICS_ENABLED" ]]; then
+  KC_METRICS_ENABLED=$(cat "$ENV_DIR/KC_METRICS_ENABLED")
+else
+  KC_METRICS_ENABLED=false
+fi
+
+info "Using KC_METRICS_ENABLED=${KC_METRICS_ENABLED}" | indent
+
+step "Building kecloak server ready to production with ${KC_DB} vendor"
+export KC_DB="${KC_DB}"
+export KC_HEALTH_ENABLED="${KC_HEALTH_ENABLED}"
+export KC_METRICS_ENABLED="${KC_METRICS_ENABLED}"
+"${KEYCLOAK_PATH}/bin/kc.sh" build
+
+step "Showing keycloak config stored in optimized image"
+"${KEYCLOAK_PATH}/bin/kc.sh" show-config
 
 step "Cleaning up tmp files"
 rm -rf "${TMP_PATH}"
