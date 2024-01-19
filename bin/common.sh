@@ -43,7 +43,7 @@ function install_jq() {
   if [[ -f "${ENV_DIR}/JQ_VERSION" ]]; then
     JQ_VERSION=$(cat "${ENV_DIR}/JQ_VERSION")
   else
-    JQ_VERSION=1.6
+    JQ_VERSION=1.7.1
   fi
   step "Fetching jq $JQ_VERSION"
   if [ -f "${CACHE_DIR}/dist/jq-$JQ_VERSION" ]; then
@@ -61,10 +61,10 @@ function install_jre() {
   if [[ -f "${ENV_DIR}/JRE_MAJOR_VERSION" ]]; then
     JRE_MAJOR_VERSION=$(cat "${ENV_DIR}/JRE_MAJOR_VERSION")
   else
-    JRE_MAJOR_VERSION=11
+    JRE_MAJOR_VERSION=17
   fi
   step "Install AdoptOpenJDK $JRE_MAJOR_VERSION JRE"
-  local jre_query_url="https://api.adoptopenjdk.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga"
+  local jre_query_url="https://api.adoptium.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga"
   local http_code
   http_code=$($CURL -G -o "$TMP_PATH/jre.json" -w '%{http_code}' -H "accept: application/json" "${jre_query_url}" \
    --data-urlencode "architecture=x64" \
@@ -77,7 +77,7 @@ function install_jre() {
    --data-urlencode "project=jdk" \
    --data-urlencode "sort_method=DEFAULT" \
    --data-urlencode "sort_order=DESC" \
-   --data-urlencode "vendor=adoptopenjdk")
+   --data-urlencode "vendor=eclipse")
   
   if [[ $http_code == 200 ]]; then
     local jre_dist
@@ -93,11 +93,11 @@ function install_jre() {
     local jre_url
     jre_url=$(cat "$TMP_PATH/jre.json" | jq '.[] | .binaries | .[] | .package.link' | xargs)
   else
-    warn "AdoptOpenJDK API v3 HTTP STATUS CODE: $http_code"
-    local jre_release_name="jdk-11.0.11+9"
+    warn "Adoptium API v3 HTTP STATUS CODE: $http_code"
+    local jre_release_name="jdk-17.0.9%2B99"
     info "Using by default $jre_release_name"
-    local jre_dist="OpenJDK11U-jre_x64_linux_hotspot_11.0.11_9.tar.gz"
-    local jre_url="https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.11%2B9/${jre_dist}"
+    local jre_dist="OpenJDK17U-jre_x64_linux_hotspot_17.0.9_9.tar.gz"
+    local jre_url="https://github.com/adoptium/temurin17-binaries/releases/download/${jre_release_name}/${jre_dist}"
     local checksum_url="${jre_url}.sha256.txt"
   fi
   info "Fetching $jre_dist"
@@ -166,11 +166,7 @@ function fetch_keycloak_dist() {
   local major_version
   major_version="${version%.*}"
   major_version="${major_version%.*}"
-  if [[ "${major_version}" -gt 11 ]]; then
-    download_url="https://github.com/keycloak/keycloak/releases/download/${version}"
-  else
-    download_url="https://downloads.jboss.org/keycloak/${version}"
-  fi
+  download_url="https://github.com/keycloak/keycloak/releases/download/${version}"
   dist_url=$(echo "${download_url}/${dist}" | xargs)
   dist_url="${dist_url%\"}"
   dist_url="${dist_url#\"}"

@@ -80,8 +80,15 @@ if [[ -f "$ENV_DIR/KC_DB" ]]; then
 else
   KC_DB="postgres"
 fi
-step "Configuring the ${KC_DB} vendor"
-"${KEYCLOAK_PATH}/bin/kc.sh" build --db ${KC_DB}
+
+info "Using KC_DB=${KC_DB}" | indent
+
+step "Building keycloak server ready to production with ${KC_DB} vendor"
+export KC_DB="${KC_DB}"
+"${KEYCLOAK_PATH}/bin/kc.sh" build
+
+step "Showing keycloak server config"
+"${KEYCLOAK_PATH}/bin/kc.sh" show-config
 
 step "Cleaning up tmp files"
 rm -rf "${TMP_PATH}"

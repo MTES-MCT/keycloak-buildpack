@@ -12,17 +12,17 @@
     },
     "STACK": {
       "description": "scalingo stack",
-      "value": "scalingo-20",
+      "value": "scalingo-22",
       "required": false
     },
     "JQ_VERSION": {
       "description": "JQ version",
-      "value": "1.6",
+      "value": "1.7.1",
       "required": false
     },
     "JRE_MAJOR_VERSION": {
       "description": "Java version",
-      "value": "11",
+      "value": "17",
       "required": false
     },
     "KEYCLOAK_VERSION": {
@@ -31,23 +31,33 @@
       "required": false
     },
     "KC_PROXY": {
-      "description": "see https://www.keycloak.org/server/reverseproxy",
+      "description": "keycloak proxy mode (default edge)",
       "value": "edge",
       "required": true
     },
+    "KC_CACHE": {
+      "description": "cache (default not HA)",
+      "value": "local",
+      "required": true
+    },
+    "KC_TRANSACTION_XA_ENABLED": {
+      "description": "default false (not HA)",
+      "value": "false",
+      "required": true
+    },
     "KC_HOSTNAME": {
-      "description": "host",
+      "description": "host (fqdn)",
       "value": "",
-      "required": false
+      "required": true
+    },
+    "KC_HTTP_ENABLED": {
+      "description": "keycloak HTTP listening (default true)",
+      "value": "true",
+      "required": true
     },
     "KC_HTTP_PORT": {
       "description": "keycloak HTTP listening port (same as Scalingo PORT)",
       "value": "$PORT",
-      "required": true
-    },
-    "KC_HTTPS_PORT": {
-      "description": "keycloak HTTPS listening port (same as Scalingo HTTPS PORT)",
-      "value": "443",
       "required": true
     },
     "KEYCLOAK_ADMIN": {
@@ -58,16 +68,21 @@
     "KEYCLOAK_ADMIN_PASSWORD": {
       "description": "admin password",
       "value": "",
-      "required": false
+      "required": true
     },
     "KC_DB": {
       "description": "database vendor (default postgres)",
       "value": "postgres",
-      "required": false
+      "required": true
     },
-    "KC_DB_URL": {
-      "description": "database url: jdbc:postgresql://localhost:5432/keycloak",
-      "value": "jdbc:postgresql://localhost:5432/keycloak",
+    "KC_DB_SCHEMA": {
+      "description": "database schema",
+      "value": "public",
+      "required": true
+    },
+    "KC_DB_URL_DATABASE": {
+      "description": "database name",
+      "value": "",
       "required": true
     },
     "KC_DB_USERNAME": {
@@ -80,10 +95,30 @@
       "value": "",
       "required": true
     },
+    "KC_DB_URL_HOST": {
+      "description": "database host",
+      "value": "",
+      "required": true
+    },
+    "KC_DB_URL_PORT": {
+      "description": "database port",
+      "value": "5432",
+      "required": true
+    },
     "PROVIDERS": {
       "description": "comma list providers",
       "value": "",
       "required": true
+    },
+    "KC_HEALTH_ENABLED": {
+      "description": "enables health metrics",
+      "value": "false",
+      "required": false
+    },
+    "KC_METRICS_ENABLED": {
+      "description": "enables all metrics",
+      "value": "false",
+      "required": false
     },
     "MAX_METASPACE_SIZE": {
       "description": "Control max memory available",
