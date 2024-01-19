@@ -31,14 +31,14 @@
       "required": false
     },
     "KC_PROXY": {
-      "description": "see https://www.keycloak.org/server/reverseproxy",
+      "description": "keycloak proxy mode (default edge)",
       "value": "edge",
       "required": true
     },
     "KC_HOSTNAME": {
-      "description": "host",
+      "description": "host (fqdn)",
       "value": "",
-      "required": false
+      "required": true
     },
     "KC_HOSTNAME_PORT": {
       "description": "keycloak HTTP listening port (same as Scalingo PORT)",
@@ -53,16 +53,21 @@
     "KEYCLOAK_ADMIN_PASSWORD": {
       "description": "admin password",
       "value": "",
-      "required": false
+      "required": true
     },
     "KC_DB": {
       "description": "database vendor (default postgres)",
       "value": "postgres",
-      "required": false
+      "required": true
     },
-    "KC_DB_URL": {
-      "description": "database url: jdbc:postgresql://localhost:5432/keycloak",
-      "value": "jdbc:postgresql://localhost:5432/keycloak",
+    "KC_DB_SCHEMA": {
+      "description": "database schema",
+      "value": "public",
+      "required": true
+    },
+    "KC_DB_URL_DATABASE": {
+      "description": "database name",
+      "value": "",
       "required": true
     },
     "KC_DB_USERNAME": {
@@ -75,10 +80,30 @@
       "value": "",
       "required": true
     },
+    "KC_DB_URL_HOST": {
+      "description": "database host",
+      "value": "",
+      "required": true
+    },
+    "KC_DB_URL_PORT": {
+      "description": "database port",
+      "value": "5432",
+      "required": true
+    },
     "PROVIDERS": {
       "description": "comma list providers",
       "value": "",
       "required": true
+    },
+    "KC_HEALTH_ENABLED": {
+      "description": "enables health metrics",
+      "value": "false",
+      "required": false
+    },
+    "KC_METRICS_ENABLED": {
+      "description": "enables all metrics",
+      "value": "false",
+      "required": false
     },
     "MAX_METASPACE_SIZE": {
       "description": "Control max memory available",
