@@ -12,4 +12,4 @@ EXPOSE 8080
 
 RUN sed -i "/esac/a export PATH=\$PATH:\/app\/java\/bin" "/app/keycloak/bin/kc.sh"
 
-ENTRYPOINT [ "/app/keycloak/bin/kc.sh", "--verbose",  "start", "--hostname-strict-https=false" ]
+ENTRYPOINT [ "/app/keycloak/bin/kc.sh", "--verbose",  "start" ]
