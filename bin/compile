@@ -85,7 +85,7 @@ info "Using KC_DB=${KC_DB}" | indent
 
 step "Building keycloak server ready to production with ${KC_DB} vendor"
 export KC_DB="${KC_DB}"
-"${KEYCLOAK_PATH}/bin/kc.sh" build
+"${KEYCLOAK_PATH}/bin/kc.sh" build --verbose
 
 step "Showing keycloak server config"
 "${KEYCLOAK_PATH}/bin/kc.sh" show-config
