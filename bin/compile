@@ -69,6 +69,30 @@ if [[ -f "${ENV_DIR}/KEYCLOAK_PROVIDERS" ]]; then
   IFS=' ' 
 fi
 
+step "Adding private providers"
+if [[ -f "${ENV_DIR}/KEYCLOAK_PRIVATE_PROVIDER" ]]; then
+  KEYCLOAK_PRIVATE_PROVIDER=$(cat "${ENV_DIR}/KEYCLOAK_PRIVATE_PROVIDER")
+  IFS=','
+  read -ra PRIVATE_PROVIDERS <<< "${KEYCLOAK_PRIVATE_PROVIDER}"
+  for PRIVATE_PROVIDER_REPO in "${PRIVATE_PROVIDERS[@]}"; do   
+    PRIVATE_PROVIDER_NAME=$(get_private_provider_name "${PRIVATE_PROVIDER_REPO}")
+    PRIVATE_REPO_NAME=$(get_private_repo_name "${PRIVATE_PROVIDER_REPO}")
+    PRIVATE_GITHUB_TOKEN=$(get_private_github_token "${PRIVATE_PROVIDER_REPO}")
+
+    PRIVATE_RELEASE_PATH=$(fetch_private_github_latest_release "${TMP_PATH}" "${PRIVATE_REPO_NAME}" "${PRIVATE_GITHUB_TOKEN}")
+    PRIVATE_PROVIDER_VERSION=$(read_version_github_json "${PRIVATE_RELEASE_PATH}")
+
+    start "Add provider ${PRIVATE_PROVIDER_NAME} ${PRIVATE_PROVIDER_VERSION}"
+    if [[ ! "${PRIVATE_PROVIDER_VERSION}" == "" ]]; then
+      fetch_private_provider_dist "${PRIVATE_PROVIDER_REPO}" "${PRIVATE_PROVIDER_VERSION}" "${TMP_PATH}" "${KEYCLOAK_PATH}" "${PRIVATE_GITHUB_TOKEN}" "$PRIVATE_RELEASE_PATH" "${PRIVATE_PROVIDER_NAME}" | indent
+      finished
+    else
+      warn "unable to fetch ${PRIVATE_PROVIDER_REPO} ${PRIVATE_PROVIDER_VERSION} release"
+    fi
+  done
+  IFS=' ' 
+fi
+
 step "Adding templates"
 if [[ -f "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR" ]]; then
   KEYCLOAK_TEMPLATES_DIR=$(cat "${ENV_DIR}/KEYCLOAK_TEMPLATES_DIR")
@@ -85,7 +109,7 @@ info "Using KC_DB=${KC_DB}" | indent
 
 step "Building keycloak server ready to production with ${KC_DB} vendor"
 export KC_DB="${KC_DB}"
-"${KEYCLOAK_PATH}/bin/kc.sh" build
+"${KEYCLOAK_PATH}/bin/kc.sh" build --verbose
 
 step "Showing keycloak server config"
 "${KEYCLOAK_PATH}/bin/kc.sh" show-config
