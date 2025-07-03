@@ -157,6 +157,31 @@ function fetch_github_latest_release() {
   echo "$latest_release_version"
 }
 
+function fetch_private_github_latest_release() {
+  local location="$1"
+  local repo="$2"
+  local github_token="$3"
+  local repo_checksum
+  repo_checksum=$(printf "%s" "${repo}" | sha256sum | grep -o '^\S\+')
+  local http_code
+  local latest_release_url
+  latest_release_url="https://api.github.com/repos/${repo}/releases/latest"
+  result_json="${TMP_PATH}/latest_release_${repo_checksum}.json"
+  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "${result_json}" -w '%{http_code}' -u "${github_token}" -H "Accept: application/vnd.github.v3+json" "${latest_release_url}")
+  echo "$result_json"
+}
+
+function read_version_github_json() {
+  local json_file="$1"
+  local latest_release_version
+  latest_release_version=""
+  latest_release_version=$(< "${json_file}" jq '.tag_name' | xargs)
+  latest_release_version="${latest_release_version%\"}"
+  latest_release_version="${latest_release_version#\"}"
+
+  echo "$latest_release_version"
+}
+
 function fetch_keycloak_dist() {
   local version="$1"
   local location="$2"
@@ -208,6 +233,36 @@ function get_provider_name() {
   echo "${provider_name}"
 }
 
+function get_private_provider_name() {
+  local provider_repo="$1"
+  
+  # Ne garder que la partie avant ||
+  provider_repo="${provider_repo%%||*}"
+
+  # Extraire le nom du repo (après le /)
+  IFS='/'
+  read -ra repo <<< "${provider_repo}"
+  local provider_name="${repo[1]}"
+
+  # Nettoyage éventuel de guillemets
+  provider_name="${provider_name%\"}"
+  provider_name="${provider_name#\"}"
+
+  echo "${provider_name}"
+}
+
+function get_private_repo_name() {
+  local full_input="$1"
+  local repo_name="${full_input%%||*}"
+  echo "$repo_name"
+}
+
+function get_private_github_token() {
+  local full_input="$1"
+  local token="${full_input##*||}"
+  echo "$token"
+}
+
 function fetch_provider_dist() {
   local provider_repo="$1"
   provider_repo=${provider_repo%%:*}
@@ -226,6 +281,42 @@ function fetch_provider_dist() {
   fi
   cp "${CACHE_DIR}/dist/${dist}" "${location}"
   mv "${location}/${provider_name}-${version}.jar" "${dest}/providers/${provider_name}.jar"
+}
+
+function fetch_private_provider_dist() {
+  local provider_repo="$1"
+  provider_repo=${provider_repo%%:*}
+  local version="$2"
+  local location="$3"
+  local dest="$4"
+  local github_token="$5"
+  local github_json="$6"
+  local provider_name="$7"
+  
+  local asset_name="${provider_name}-${version}.jar"
+
+  # 🔍 Extraire l'URL de l'asset correspondant à asset_name
+  local asset_url
+  asset_url=$(jq -r --arg dist "$asset_name" '
+    .assets[] | select(.name == $dist) | .url
+  ' "$github_json")
+
+  info "Asset URL: $asset_url"
+
+  mkdir -p "${CACHE_DIR}/dist"
+
+  if [ -f "${CACHE_DIR}/dist/${asset_name}" ]; then
+    info "File is already downloaded"
+  else
+    curl -L \
+      -u "${github_token}" \
+      -H "Accept: application/octet-stream" \
+      -o "${CACHE_DIR}/dist/${asset_name}" \
+      "$asset_url"
+  fi
+
+  cp "${CACHE_DIR}/dist/${asset_name}" "${location}"
+  mv "${location}/${asset_name}" "${dest}/providers/${provider_name}.jar"
 }
 
 function add_templates() {
