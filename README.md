@@ -4,6 +4,20 @@
 
 [![Deploy to Scalingo](https://cdn.scalingo.com/deploy/button.svg)](https://my.scalingo.com/deploy?source=https://github.com/MTES-MCT/keycloak-buildpack)
 
+## Keycloak providers : 
+For public providers (Public github repository) add an env variable :
+```
+    KEYCLOAK_PROVIDERS="provider1,provider2"
+```
+ex : KEYCLOAK_PROVIDERS=MTES-MCT/Keycloak-FranceConnect,jacekkow/keycloak-protocol-cas,MTES-MCT/dossierfacile-keycloak-extension
+
+For private providers (Private github repository) add an env variable : 
+```
+    KEYCLOAK_PRIVATE_PROVIDER=provider1||$GITHUBID:$GITHUB_PAT,provider2||$GITHUBID:$GITHUB_PAT
+```
+
+ex: KEYCLOAK_PRIVATE_PROVIDER=MTES-MCT/Dossier-Facile-Keycloak||$GITHUBID:$GITHUB_PAT
+
 ## Suitability of releases
 
 | Keycloak          | Buildpack |
