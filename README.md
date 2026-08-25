@@ -9,7 +9,7 @@ For public providers (Public github repository) add an env variable :
 ```
     KEYCLOAK_PROVIDERS="provider1,provider2"
 ```
-ex : KEYCLOAK_PROVIDERS=MTES-MCT/Keycloak-FranceConnect,jacekkow/keycloak-protocol-cas,MTES-MCT/dossierfacile-keycloak-extension
+ex : KEYCLOAK_PROVIDERS=MTES-MCT/keycloak-franceconnect,jacekkow/keycloak-protocol-cas,MTES-MCT/dossierfacile-keycloak-extension
 
 For private providers (Private github repository) add an env variable : 
 ```
@@ -17,6 +17,14 @@ For private providers (Private github repository) add an env variable :
 ```
 
 ex: KEYCLOAK_PRIVATE_PROVIDER=MTES-MCT/Dossier-Facile-Keycloak||$GITHUBID:$GITHUB_PAT
+or with explicit version tag: `KEYCLOAK_PRIVATE_PROVIDER=MTES-MCT/Dossier-Facile-Keycloak:1.0.0||$GITHUBID:$GITHUB_PAT`
+
+For URL providers (Direct HTTPS links / S3 presigned URLs) add an env variable :
+```
+    KEYCLOAK_URL_PROVIDERS="url1,url2"
+```
+
+ex: `KEYCLOAK_URL_PROVIDERS="https://my-bucket.s3.eu-west-3.amazonaws.com/my-provider-1.0.0.jar?AWSAccessKeyId=AKIA...&Signature=..."`
 
 ## Suitability of releases
 

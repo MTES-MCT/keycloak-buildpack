@@ -49,7 +49,7 @@ function install_jq() {
   if [ -f "${CACHE_DIR}/dist/jq-$JQ_VERSION" ]; then
     info "File already downloaded"
   else
-    ${CURL} -o "${CACHE_DIR}/dist/jq-$JQ_VERSION" "https://github.com/stedolan/jq/releases/download/jq-$JQ_VERSION/jq-linux64"
+    curl -L --retry 15 --retry-delay 2 -o "${CACHE_DIR}/dist/jq-$JQ_VERSION" "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64"
   fi
   cp "${CACHE_DIR}/dist/jq-$JQ_VERSION" "${BUILD_DIR}/bin/jq"
   chmod +x "${BUILD_DIR}/bin/jq"
@@ -64,10 +64,10 @@ function install_jre() {
     JRE_MAJOR_VERSION=25
   fi
   step "Install AdoptOpenJDK $JRE_MAJOR_VERSION JRE"
-  # https://api.adoptium.net/q/swagger-ui/#/Assets/searchReleases
+  # https://api.adoptium.net/q/swagger-ui/#/Assets/searchReleases
   local jre_query_url="https://api.adoptium.net/v3/assets/feature_releases/${JRE_MAJOR_VERSION}/ga"
   local http_code
-  http_code=$($CURL -G -o "$TMP_PATH/jre.json" -w '%{http_code}' -H "accept: application/json" "${jre_query_url}" \
+  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "$TMP_PATH/jre.json" -w '%{http_code}' -H "accept: application/json" "${jre_query_url}" \
    --data-urlencode "architecture=x64" \
    --data-urlencode "heap_size=normal" \
    --data-urlencode "image_type=jre" \
@@ -106,12 +106,12 @@ function install_jre() {
   if [ -f "${dist_filename}" ]; then
     info "File already downloaded"
   else
-    ${CURL} -o "${dist_filename}" "${jre_url}"
+    curl -L --retry 15 --retry-delay 2 -o "${dist_filename}" "${jre_url}"
   fi
   if [ -f "${dist_filename}.sha256" ]; then
     info "JRE sha256 sum already checked"
   else
-    ${CURL} -o "${dist_filename}.sha256" "${checksum_url}"
+    curl -L --retry 15 --retry-delay 2 -o "${dist_filename}.sha256" "${checksum_url}"
     cd "${CACHE_DIR}/dist" || return
     sha256sum -c --strict --status "${dist_filename}.sha256"
     info "JRE sha256 checksum valid"
@@ -162,13 +162,29 @@ function fetch_private_github_latest_release() {
   local location="$1"
   local repo="$2"
   local github_token="$3"
+  local token_secret="${github_token##*:}"
   local repo_checksum
   repo_checksum=$(printf "%s" "${repo}" | sha256sum | grep -o '^\S\+')
   local http_code
   local latest_release_url
   latest_release_url="https://api.github.com/repos/${repo}/releases/latest"
   result_json="${TMP_PATH}/latest_release_${repo_checksum}.json"
-  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "${result_json}" -w '%{http_code}' -u "${github_token}" -H "Accept: application/vnd.github.v3+json" "${latest_release_url}")
+  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "${result_json}" -w '%{http_code}' -H "Authorization: Bearer ${token_secret}" -H "Accept: application/vnd.github.v3+json" "${latest_release_url}")
+  echo "$result_json"
+}
+
+function fetch_private_github_release_by_tag() {
+  local location="$1"
+  local repo="$2"
+  local tag="$3"
+  local github_token="$4"
+  local token_secret="${github_token##*:}"
+  local repo_checksum
+  repo_checksum=$(printf "%s" "${repo}_${tag}" | sha256sum | grep -o '^\S\+')
+  local http_code
+  local release_url="https://api.github.com/repos/${repo}/releases/tags/${tag}"
+  result_json="${TMP_PATH}/release_${repo_checksum}.json"
+  http_code=$(curl -L --retry 15 --retry-delay 2 -G -o "${result_json}" -w '%{http_code}' -H "Authorization: Bearer ${token_secret}" -H "Accept: application/vnd.github.v3+json" "${release_url}")
   echo "$result_json"
 }
 
@@ -206,11 +222,11 @@ function fetch_keycloak_dist() {
   if [ -f "${CACHE_DIR}/dist/${dist}" ]; then
     info "File is already downloaded"
   else
-    ${CURL} -g -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
+    curl -L --retry 15 --retry-delay 2 -g -o "${CACHE_DIR}/dist/${dist}" "${dist_url}"
   fi
-  ${CURL} -g -o "${CACHE_DIR}/dist/${dist}.asc" "${asc_url}"
+  curl -L --retry 15 --retry-delay 2 -g -o "${CACHE_DIR}/dist/${dist}.asc" "${asc_url}"
   local key_url="https://www.keycloak.org/keys/keycloak-2.asc"
-  ${CURL} -g -o "${CACHE_DIR}/dist/keycloak-2.asc" "${key_url}"
+  curl -L --retry 15 --retry-delay 2 -g -o "${CACHE_DIR}/dist/keycloak-2.asc" "${key_url}"
   gpg --import "${CACHE_DIR}/dist/keycloak-2.asc"
   gpg --verify "${CACHE_DIR}/dist/${dist}.asc" "${CACHE_DIR}/dist/${dist}"
   if gpg --verify "${CACHE_DIR}/dist/${dist}.asc" "${CACHE_DIR}/dist/${dist}" 2>/dev/null; then
@@ -249,19 +265,48 @@ function get_private_provider_name() {
   provider_name="${provider_name%\"}"
   provider_name="${provider_name#\"}"
 
+  # Retirer la version si présente (:version)
+  provider_name="${provider_name%%:*}"
+
   echo "${provider_name}"
 }
 
 function get_private_repo_name() {
   local full_input="$1"
-  local repo_name="${full_input%%||*}"
+  local repo_and_version="${full_input%%||*}"
+  local repo_name="${repo_and_version%%:*}"
   echo "$repo_name"
+}
+
+function get_private_repo_version() {
+  local full_input="$1"
+  local repo_and_version="${full_input%%||*}"
+  local version="${repo_and_version##*:}"
+  if [[ "${version}" == "${repo_and_version}" ]]; then
+    echo ""
+  else
+    echo "$version"
+  fi
 }
 
 function get_private_github_token() {
   local full_input="$1"
   local token="${full_input##*||}"
   echo "$token"
+}
+
+function get_filename_from_url() {
+  local url="$1"
+  # Retirer la query string (après le ?)
+  local url_path="${url%%\?*}"
+  # Extraire le nom de fichier (après le dernier /)
+  local filename="${url_path##*/}"
+  filename="${filename%\"}"
+  filename="${filename#\"}"
+  if [[ -z "$filename" ]]; then
+    filename="provider.jar"
+  fi
+  echo "$filename"
 }
 
 function fetch_provider_dist() {
@@ -291,6 +336,7 @@ function fetch_private_provider_dist() {
   local location="$3"
   local dest="$4"
   local github_token="$5"
+  local token_secret="${github_token##*:}"
   local github_json="$6"
   local provider_name="$7"
   
@@ -310,7 +356,7 @@ function fetch_private_provider_dist() {
     info "File is already downloaded"
   else
     curl -L \
-      -u "${github_token}" \
+      -H "Authorization: Bearer ${token_secret}" \
       -H "Accept: application/octet-stream" \
       -o "${CACHE_DIR}/dist/${asset_name}" \
       "$asset_url"
@@ -318,6 +364,27 @@ function fetch_private_provider_dist() {
 
   cp "${CACHE_DIR}/dist/${asset_name}" "${location}"
   mv "${location}/${asset_name}" "${dest}/providers/${provider_name}.jar"
+}
+
+function fetch_url_provider_dist() {
+  local provider_url="$1"
+  local location="$2"
+  local dest="$3"
+  
+  local filename
+  filename=$(get_filename_from_url "${provider_url}")
+  local url_clean="${provider_url%%\?*}"
+  
+  info "Downloading provider from URL: ${url_clean}"
+  info "Target filename: ${filename}"
+  
+  mkdir -p "${CACHE_DIR}/dist"
+  local cached_file="${CACHE_DIR}/dist/${filename}"
+  
+  curl -L --retry 15 --retry-delay 2 -o "${cached_file}" "${provider_url}"
+  
+  cp "${cached_file}" "${location}"
+  mv "${location}/${filename}" "${dest}/providers/${filename}"
 }
 
 function add_templates() {

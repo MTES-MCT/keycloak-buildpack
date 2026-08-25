@@ -78,16 +78,43 @@ if [[ -f "${ENV_DIR}/KEYCLOAK_PRIVATE_PROVIDER" ]]; then
     PRIVATE_PROVIDER_NAME=$(get_private_provider_name "${PRIVATE_PROVIDER_REPO}")
     PRIVATE_REPO_NAME=$(get_private_repo_name "${PRIVATE_PROVIDER_REPO}")
     PRIVATE_GITHUB_TOKEN=$(get_private_github_token "${PRIVATE_PROVIDER_REPO}")
+    SPECIFIED_VERSION=$(get_private_repo_version "${PRIVATE_PROVIDER_REPO}")
 
-    PRIVATE_RELEASE_PATH=$(fetch_private_github_latest_release "${TMP_PATH}" "${PRIVATE_REPO_NAME}" "${PRIVATE_GITHUB_TOKEN}")
+    if [[ -n "${SPECIFIED_VERSION}" ]]; then
+      PRIVATE_RELEASE_PATH=$(fetch_private_github_release_by_tag "${TMP_PATH}" "${PRIVATE_REPO_NAME}" "${SPECIFIED_VERSION}" "${PRIVATE_GITHUB_TOKEN}")
+    else
+      PRIVATE_RELEASE_PATH=$(fetch_private_github_latest_release "${TMP_PATH}" "${PRIVATE_REPO_NAME}" "${PRIVATE_GITHUB_TOKEN}")
+    fi
     PRIVATE_PROVIDER_VERSION=$(read_version_github_json "${PRIVATE_RELEASE_PATH}")
 
     start "Add provider ${PRIVATE_PROVIDER_NAME} ${PRIVATE_PROVIDER_VERSION}"
-    if [[ ! "${PRIVATE_PROVIDER_VERSION}" == "" ]]; then
+    if [[ -n "${PRIVATE_PROVIDER_VERSION}" && "${PRIVATE_PROVIDER_VERSION}" != "null" ]]; then
       fetch_private_provider_dist "${PRIVATE_PROVIDER_REPO}" "${PRIVATE_PROVIDER_VERSION}" "${TMP_PATH}" "${KEYCLOAK_PATH}" "${PRIVATE_GITHUB_TOKEN}" "$PRIVATE_RELEASE_PATH" "${PRIVATE_PROVIDER_NAME}" | indent
       finished
     else
       warn "unable to fetch ${PRIVATE_PROVIDER_REPO} ${PRIVATE_PROVIDER_VERSION} release"
+    fi
+  done
+  IFS=' ' 
+fi
+
+step "Adding URL providers"
+if [[ -f "${ENV_DIR}/KEYCLOAK_URL_PROVIDERS" ]] || [[ -f "${ENV_DIR}/Keycloak_URL_PROVIDERS" ]]; then
+  KEYCLOAK_URL_PROVIDERS=""
+  if [[ -f "${ENV_DIR}/KEYCLOAK_URL_PROVIDERS" ]]; then
+    KEYCLOAK_URL_PROVIDERS=$(cat "${ENV_DIR}/KEYCLOAK_URL_PROVIDERS")
+  else
+    KEYCLOAK_URL_PROVIDERS=$(cat "${ENV_DIR}/Keycloak_URL_PROVIDERS")
+  fi
+  IFS=','
+  read -ra URL_PROVIDERS <<< "${KEYCLOAK_URL_PROVIDERS}"
+  for PROVIDER_URL in "${URL_PROVIDERS[@]}"; do   
+    PROVIDER_URL=$(echo "${PROVIDER_URL}" | xargs)
+    if [[ -n "${PROVIDER_URL}" ]]; then
+      FILENAME=$(get_filename_from_url "${PROVIDER_URL}")
+      start "Add provider from URL ${FILENAME}"
+      fetch_url_provider_dist "${PROVIDER_URL}" "${TMP_PATH}" "${KEYCLOAK_PATH}" | indent
+      finished
     fi
   done
   IFS=' ' 
